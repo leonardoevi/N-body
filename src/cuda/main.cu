@@ -3,10 +3,9 @@
 #include <cuda_runtime.h>
 #include <valarray>
 #include <iomanip>
-#include <array>
 
-#define N_PARTICLES 4  // current max is circa 44000l
-#define BLOCK_SIZE 2       // blocks will be 2D: BLOCK_SIZE*BLOCK_SIZE
+#define N_PARTICLES 200  // current max is circa 31500
+#define BLOCK_SIZE 32       // blocks will be 2D: BLOCK_SIZE*BLOCK_SIZE
 #define DIM 2
 
 /**
@@ -79,10 +78,11 @@ __global__ void sum_over_rows(const double* mat, double* arr, const unsigned int
 
 void checkCudaError(const char* message);
 void printDeviceProperties(int deviceId);
-void printMatrix(const double* matrix, int rows, int cols);
+void printMatrix(const std::string& name, const double* matrix, int rows, int cols);
 void fill_array(double* arr, unsigned int size);
 bool check_matrix(const double* matrix, const double* array, unsigned int size);
-double check_matrix_force(const double* matrix, const double* x_pos, const double* y_pos, const unsigned int size);
+double check_matrix_force(const double* matrix, const double* pos, unsigned int component, unsigned int size);
+void printArray(const std::string& name, const double* arr, int size);
 
 void cpf_test(const double* x_pos, const double* y_pos, double* matrix, const unsigned int matrix_edge_size) {
     for (int i = 0; i < matrix_edge_size; ++i) {
@@ -107,8 +107,7 @@ int main() {
     constexpr int n_blocks = blocks_per_row * (blocks_per_row + 1) / 2;
 
     // allocate matrix and array
-    auto *matrix = static_cast<double *>(malloc(N_PARTICLES * N_PARTICLES * sizeof(double))); // this matrix is not actually needed on the host
-    auto *matrix_reference = static_cast<double *>(malloc(N_PARTICLES * N_PARTICLES * sizeof(double)));
+    auto *matrix = static_cast<double *>(malloc(N_PARTICLES * N_PARTICLES * sizeof(double)));
     auto *pos = static_cast<double *>(malloc(N_PARTICLES * DIM * sizeof(double)));
 
     // allocate matrix and array on device
@@ -116,11 +115,7 @@ int main() {
     cudaMalloc(&device_matrix, N_PARTICLES*N_PARTICLES*sizeof(double)); checkCudaError("cudaMalloc1");
     cudaMalloc(&device_pos, N_PARTICLES * DIM * sizeof(double)); checkCudaError("cudaMalloc2");
 
-    // fill array on host and copy to device
-    pos[0] = 1.0;pos[1] = 3.0;pos[2] = 1.0;pos[3] = 3.0;
-    pos[4] = 1.0;pos[5] = 1.0;pos[6] = 3.0;pos[7] = 3.0;
-
-    //fill_array(pos, N_PARTICLES * DIM);
+    fill_array(pos, N_PARTICLES * DIM);
     cudaMemcpy(device_pos, pos, N_PARTICLES * DIM * sizeof(double), cudaMemcpyHostToDevice); checkCudaError("cudaMalloc4");
 
     // launch kernel
@@ -140,31 +135,14 @@ int main() {
     // copy back data
     cudaMemcpy(matrix, device_matrix, N_PARTICLES * N_PARTICLES * sizeof(double), cudaMemcpyDeviceToHost);
 
-    std::cout << "x_pos: " << std::endl;
-    std::cout << std::fixed << std::setprecision(6);
-    for (int i = 0; i < N_PARTICLES; i++)
-        std::cout << pos[i] << " ";
-    std::cout << std::endl;
-    std::cout << "y_pos: " << std::endl;
-    for (int i = 0; i < N_PARTICLES; i++)
-        std::cout << pos[i + N_PARTICLES] << " ";
-    std::cout << std::endl << std::endl;
-
-    std::cout << "matrix: " << std::endl;
-    printMatrix(matrix, N_PARTICLES, N_PARTICLES);
-    std::cout << std::endl;
-
-
-    std::cout << "f_tot_x: " << std::endl;
-    for (int i = 0; i < N_PARTICLES; i++)
-        std::cout << f_tot[i] << " ";
-    std::cout << std::endl << std::endl;
+    //printMatrix("matrix", matrix, N_PARTICLES, N_PARTICLES);
+    //printArray("f_tot", f_tot, N_PARTICLES);
 
     std::cout << "Kernel is done! Checking result:" << std::endl;
 
     // check correctness of result
-    //double error = check_matrix_force(matrix, x_pos, y_pos, N_PARTICLES);
-    //std::cout << "Avg result error is: " << error << std::endl;
+    const double error = check_matrix_force(matrix, pos, 0, N_PARTICLES);
+    std::cout << "Total result error is: " << error << std::endl;
 
     // free space on Host and device
     free(matrix);               free(pos);
@@ -201,16 +179,21 @@ bool check_matrix(const double* matrix, const double* array, const unsigned int 
     return true;
 }
 
-double check_matrix_force(const double* matrix, const double* x_pos, const double* y_pos, const unsigned int size) {
+double check_matrix_force(const double* matrix, const double* pos, const unsigned int component, const unsigned int size) {
     double delta = 0.0f;
     double epsilon = 0.0001f;
     for (int i = 0; i < size; i++)
         for (int j = 0; j < size; j++)
             if (i != j) {
-                const double dx = x_pos[j] - x_pos[i];
-                const double dy = y_pos[j] - y_pos[i];
-                const double d = std::sqrt(dx * dx + dy * dy);
-                const double tmp = dx / (d * d * d);
+                double di[DIM];
+                for (unsigned int k = 0; k < DIM; ++k)
+                    di[k] = pos[k * size + j] - pos[k * size + i];
+
+                double d = 0;
+                for (unsigned int k = 0; k < DIM; ++k)
+                    d += di[k] * di[k];
+                d = std::sqrt(d);
+                const double tmp = di[component] / (d * d * d);
                 if (std::abs(matrix[i * size + j] - tmp) > epsilon)
                         std::cerr << "[" << i << "," << j << "]" << matrix[i * size + j] - tmp << std::endl;
                 delta += matrix[i * size + j] - tmp;
@@ -268,7 +251,9 @@ void printDeviceProperties(int deviceId) {
     std::cout << std::endl;
 }
 
-void printMatrix(const double* matrix, const int rows, const int cols) {
+void printMatrix(const std::string& name, const double* matrix, const int rows, const int cols) {
+    std::cout << name << std::endl;
+    std::cout << std::fixed << std::setprecision(6);
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             // Access the element at (i, j) in row-major order
@@ -278,4 +263,14 @@ void printMatrix(const double* matrix, const int rows, const int cols) {
         std::cout << std::endl; // Move to the next row
         //if ((i + 1) % BLOCK_SIZE == 0) std::cout << std::endl;
     }
+    std::cout << std::endl;
+}
+
+void printArray(const std::string& name, const double* arr, const int size) {
+    std::cout << name << std::endl;
+    std::cout << std::fixed << std::setprecision(6);
+    for (int i = 0; i < size; ++i) {
+            std::cout << arr[i] << "\t";
+    }
+    std::cout << std::endl << std::endl;
 }
