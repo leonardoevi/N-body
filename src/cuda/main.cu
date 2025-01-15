@@ -170,7 +170,7 @@ int main() {
     free(matrix);               free(x_pos); free(y_pos);
     cudaFree(device_matrix);    cudaFree(device_x_pos);
 
-    free(device_f_tot_x);
+    free(f_tot);
     cudaFree(device_f_tot_x);
 
     return EXIT_SUCCESS;
