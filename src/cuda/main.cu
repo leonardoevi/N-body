@@ -2,7 +2,7 @@
 #include <string>
 #include <cuda_runtime.h>
 
-#define N_PARTICLES 44720l  // current max is circa 44720
+#define N_PARTICLES 45000l  // current max is circa 45.000
 #define BLOCK_SIZE 32       // blocks will be 2D: BLOCK_SIZE*BLOCK_SIZE
 
 /**
@@ -17,13 +17,13 @@
  */
 __host__ __device__ void mapIndexTo2D(unsigned int index, unsigned int n, unsigned int &i, unsigned int &j);
 
-__global__ void vectorAdd(const float* A, const float* B, float* C, const int N) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < N) {
-        C[idx] = A[idx] + B[idx];
-    }
-}
-
+/**
+ * @param arr pointer to the input array on the device
+ * @param matrix pointer to the output matrix (passed as a single array)
+ * @param matrix_edge_size size of the square matrix, must be equal to the length of the input array
+ * @param blocks_per_row number of blocks needed to cover a row of the matrix.
+ * For a matrix of size 20 and a block of size 8 this parameter should be 3.
+ */
 __global__ void calculate_pairwise_difference(const float* arr, float* matrix, const unsigned int matrix_edge_size, const unsigned int blocks_per_row) {
     unsigned int i, j; mapIndexTo2D(blockIdx.x, blocks_per_row, i, j);
     i = i * blockDim.x + threadIdx.x;
@@ -35,31 +35,12 @@ __global__ void calculate_pairwise_difference(const float* arr, float* matrix, c
 
 void checkCudaError(const char* message);
 void printDeviceProperties(int deviceId);
-void test_kernel();
 void printMatrix(const float* matrix, int rows, int cols);
 void fill_array(float* arr, unsigned int size);
 bool check_matrix(const float* matrix, const float* array, unsigned int size);
 
 int main() {
-/*
-    // print device properties
-    int deviceCount;
-    cudaError_t err = cudaGetDeviceCount(&deviceCount);
-    if (err != cudaSuccess) {
-        std::cerr << "Error retrieving device count: " << cudaGetErrorString(err) << std::endl;
-        return 1;
-    }
-    std::cout << "Number of CUDA-capable devices: " << deviceCount << std::endl;
-    for (int i = 0; i < deviceCount; ++i) {
-        printDeviceProperties(i);
-    }
-
-    long long available_floats = 8105l * 1000l * 1000l / sizeof(float);
-    std::cout << available_floats << std::endl;
-
-    // test kernel execution
-    test_kernel();
-    */
+    printDeviceProperties(0);
 
     std::cout << N_PARTICLES << std::endl;
 
@@ -69,35 +50,23 @@ int main() {
     constexpr int n_blocks = blocks_per_row * (blocks_per_row + 1) / 2;
 
     // allocate matrix and array
-    float *matrix = static_cast<float *>(malloc(N_PARTICLES * N_PARTICLES * sizeof(float)));
-    float *array = static_cast<float *>(malloc(N_PARTICLES * sizeof(float)));
+    auto *matrix = static_cast<float *>(malloc(N_PARTICLES * N_PARTICLES * sizeof(float)));
+    auto *array = static_cast<float *>(malloc(N_PARTICLES * sizeof(float)));
 
+    // allocate matrix and array on device
     float *device_matrix, *device_array;
     cudaMalloc(&device_matrix, N_PARTICLES*N_PARTICLES*sizeof(float)); checkCudaError("cudaMalloc");
     cudaMalloc(&device_array, N_PARTICLES*sizeof(float)); checkCudaError("cudaMalloc");
 
     // fill array on host and copy to device
     fill_array(array, N_PARTICLES);
-
-/*
-    std::cout << "Array:" << std::endl;
-    for (int i = 0; i < N_PARTICLES; i++) {
-        std::cout << array[i] << "  ";
-        if ((i + 1) % BLOCK_SIZE == 0) std::cout << "  ";
-    }
-    std::cout << std::endl << std::endl;
-    */
-
     cudaMemcpy(device_array, array, N_PARTICLES * sizeof(float), cudaMemcpyHostToDevice); checkCudaError("cudaMalloc");
 
-    //dim3 block_dim(BLOCK_SIZE, BLOCK_SIZE);
-    //dim3 grid_dim(blocks_per_row, blocks_per_row);
+    // launch kernel
     dim3 block_dim(BLOCK_SIZE, BLOCK_SIZE);
     dim3 grid_dim(n_blocks);
-
     calculate_pairwise_difference<<<grid_dim, block_dim>>>(device_array, device_matrix, N_PARTICLES, blocks_per_row);
     checkCudaError("kernel launch");
-
     cudaDeviceSynchronize();
 
     std::cout << "Kernel is done! Checking result." << std::endl;
@@ -105,23 +74,17 @@ int main() {
     // copy back data
     cudaMemcpy(matrix, device_matrix, N_PARTICLES * N_PARTICLES * sizeof(float), cudaMemcpyDeviceToHost);
 
-    //std::cout << "Matrix:" << std::endl;
-    //printMatrix(matrix, N_PARTICLES, N_PARTICLES);
-
-    bool correct = check_matrix(matrix, array, N_PARTICLES);
-
+    // check correctness of result
+    const bool correct = check_matrix(matrix, array, N_PARTICLES);
     const std::string s = correct ? " " : " not ";
     std::cout << "Result is" << s << "correct" << std::endl;
 
-    free(matrix);
-    free(array);
-
-    cudaFree(device_matrix);
-    cudaFree(device_array);
+    // free space on Host and device
+    free(matrix);               free(array);
+    cudaFree(device_matrix);    cudaFree(device_array);
 
     if (correct)
         return EXIT_SUCCESS;
-
     return EXIT_FAILURE;
 }
 
@@ -149,7 +112,6 @@ bool check_matrix(const float* matrix, const float* array, const unsigned int si
 
     return true;
 }
-
 
 void fill_array(float *arr, const unsigned int size) {
     for (int i = 0; i < size; i++) {
@@ -197,64 +159,6 @@ void printDeviceProperties(int deviceId) {
     std::cout << "  Concurrent kernels: " << (deviceProp.concurrentKernels ? "Yes" : "No") << std::endl;
     std::cout << "  ECC support: " << (deviceProp.ECCEnabled ? "Yes" : "No") << std::endl;
     std::cout << std::endl;
-}
-
-void test_kernel() {
-    const int N = 1000; // Size of vectors
-    const int size = N * sizeof(float);
-
-    // Host vectors
-    float *h_A, *h_B, *h_C;
-    h_A = new float[N];
-    h_B = new float[N];
-    h_C = new float[N];
-
-    // Initialize host vectors
-    for (int i = 0; i < N; ++i) {
-        h_A[i] = static_cast<float>(i);
-        h_B[i] = static_cast<float>(i * 2);
-    }
-
-    // Device vectors
-    float *d_A, *d_B, *d_C;
-    cudaMalloc(&d_A, size);
-    cudaMalloc(&d_B, size);
-    cudaMalloc(&d_C, size);
-
-    // Copy data from host to device
-    cudaMemcpy(d_A, h_A, size, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_B, h_B, size, cudaMemcpyHostToDevice);
-
-    // Launch the kernel
-    int threadsPerBlock = 256;
-    int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
-    vectorAdd<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, N);
-
-    // Copy result back to host
-    cudaMemcpy(h_C, d_C, size, cudaMemcpyDeviceToHost);
-
-    // Verify the result
-    bool success = true;
-    for (int i = 0; i < N; ++i) {
-        if (abs(h_C[i] - (h_A[i] + h_B[i])) > 1e-5) {
-            success = false;
-            std::cerr << "Error at index " << i << ": Expected "
-                      << (h_A[i] + h_B[i]) << " but got " << h_C[i] << "\n";
-            break;
-        }
-    }
-
-    if (success) {
-        std::cout << "CUDA kernel executed successfully and verified!\n";
-    }
-
-    // Free memory
-    delete[] h_A;
-    delete[] h_B;
-    delete[] h_C;
-    cudaFree(d_A);
-    cudaFree(d_B);
-    cudaFree(d_C);
 }
 
 void printMatrix(const float* matrix, const int rows, const int cols) {
