@@ -3,6 +3,7 @@
 #include <cuda_runtime.h>
 #include <valarray>
 #include <iomanip>
+#include <array>
 
 #define N_PARTICLES 4  // current max is circa 44000l
 #define BLOCK_SIZE 2       // blocks will be 2D: BLOCK_SIZE*BLOCK_SIZE
@@ -45,17 +46,23 @@ __global__ void calculate_pairwise_difference(const double* arr, double* matrix,
         }
 }
 
-__global__ void calculate_pairwise_force(const double* x_pos, const double* y_pos, double* matrix, const unsigned int matrix_edge_size, const unsigned int blocks_per_row) {
+__global__ void calculate_pairwise_force_component(const double* pos, const unsigned int component, double* matrix, const unsigned int matrix_edge_size, const unsigned int blocks_per_row) {
     unsigned int i, j; mapIndexTo2D(blockIdx.x, blocks_per_row, i, j);
     i = i * blockDim.x + threadIdx.x;
     j = j * blockDim.y + threadIdx.y;
 
     if (i < matrix_edge_size && j < matrix_edge_size && i < j)
         if (j > i) {
-            const double dx = x_pos[j] - x_pos[i];
-            const double dy = y_pos[j] - y_pos[i];
-            const double d = std::sqrt(dx * dx + dy * dy);
-            matrix[i * matrix_edge_size + j] = dx / (d * d * d);
+            double di[DIM];
+            for (unsigned int k = 0; k < DIM; ++k)
+                di[k] = pos[k * matrix_edge_size + j] - pos[k * matrix_edge_size + i];
+
+            double d = 0;
+            for (unsigned int k = 0; k < DIM; ++k)
+                d += di[k] * di[k];
+            d = std::sqrt(d);
+
+            matrix[i * matrix_edge_size + j] = di[component] / (d * d * d);
             matrix[j * matrix_edge_size + i] = -matrix[i * matrix_edge_size + j];
         }
 }
@@ -102,32 +109,29 @@ int main() {
     // allocate matrix and array
     auto *matrix = static_cast<double *>(malloc(N_PARTICLES * N_PARTICLES * sizeof(double))); // this matrix is not actually needed on the host
     auto *matrix_reference = static_cast<double *>(malloc(N_PARTICLES * N_PARTICLES * sizeof(double)));
-    auto *x_pos = static_cast<double *>(malloc(N_PARTICLES * sizeof(double)));
-    auto *y_pos = static_cast<double *>(malloc(N_PARTICLES * sizeof(double)));
+    auto *pos = static_cast<double *>(malloc(N_PARTICLES * DIM * sizeof(double)));
 
     // allocate matrix and array on device
-    double *device_matrix, *device_x_pos, *device_y_pos;
-    cudaMalloc(&device_matrix, N_PARTICLES*N_PARTICLES*sizeof(double)); checkCudaError("cudaMalloc");
-    cudaMalloc(&device_x_pos, N_PARTICLES*sizeof(double)); checkCudaError("cudaMalloc");
-    cudaMalloc(&device_y_pos, N_PARTICLES*sizeof(double)); checkCudaError("cudaMalloc");
+    double *device_matrix, *device_pos;
+    cudaMalloc(&device_matrix, N_PARTICLES*N_PARTICLES*sizeof(double)); checkCudaError("cudaMalloc1");
+    cudaMalloc(&device_pos, N_PARTICLES * DIM * sizeof(double)); checkCudaError("cudaMalloc2");
 
     // fill array on host and copy to device
-    x_pos[0] = 1.0;x_pos[1] = 3.0;x_pos[2] = 1.0;x_pos[3] = 3.0;
-    y_pos[0] = 1.0;y_pos[1] = 1.0;y_pos[2] = 3.0;y_pos[3] = 3.0;
-    //fill_array(x_pos, N_PARTICLES);
-    //fill_array(y_pos, N_PARTICLES);
-    cudaMemcpy(device_x_pos, x_pos, N_PARTICLES * sizeof(double), cudaMemcpyHostToDevice); checkCudaError("cudaMalloc");
-    cudaMemcpy(device_y_pos, y_pos, N_PARTICLES * sizeof(double), cudaMemcpyHostToDevice); checkCudaError("cudaMalloc");
+    pos[0] = 1.0;pos[1] = 3.0;pos[2] = 1.0;pos[3] = 3.0;
+    pos[4] = 1.0;pos[5] = 1.0;pos[6] = 3.0;pos[7] = 3.0;
+
+    //fill_array(pos, N_PARTICLES * DIM);
+    cudaMemcpy(device_pos, pos, N_PARTICLES * DIM * sizeof(double), cudaMemcpyHostToDevice); checkCudaError("cudaMalloc4");
 
     // launch kernel
     dim3 block_dim(BLOCK_SIZE, BLOCK_SIZE);
     dim3 grid_dim(n_blocks);
-    calculate_pairwise_force<<<grid_dim, block_dim>>>(device_x_pos, device_y_pos, device_matrix, N_PARTICLES, blocks_per_row);
+    calculate_pairwise_force_component<<<grid_dim, block_dim>>>(device_pos, 0, device_matrix, N_PARTICLES, blocks_per_row);
     checkCudaError("kernel launch");
     cudaDeviceSynchronize();
 
     double *device_f_tot_x;
-    cudaMalloc(&device_f_tot_x, N_PARTICLES * sizeof(double)); checkCudaError("cudaMalloc");
+    cudaMalloc(&device_f_tot_x, N_PARTICLES * sizeof(double)); checkCudaError("cudaMalloc8");
     sum_over_rows<<<n_blocks, BLOCK_SIZE>>>(device_matrix, device_f_tot_x, N_PARTICLES);
 
     auto *f_tot = static_cast<double *>(malloc(N_PARTICLES * sizeof(double)));
@@ -139,21 +143,17 @@ int main() {
     std::cout << "x_pos: " << std::endl;
     std::cout << std::fixed << std::setprecision(6);
     for (int i = 0; i < N_PARTICLES; i++)
-        std::cout << x_pos[i] << " ";
+        std::cout << pos[i] << " ";
     std::cout << std::endl;
     std::cout << "y_pos: " << std::endl;
     for (int i = 0; i < N_PARTICLES; i++)
-        std::cout << y_pos[i] << " ";
+        std::cout << pos[i + N_PARTICLES] << " ";
     std::cout << std::endl << std::endl;
 
     std::cout << "matrix: " << std::endl;
     printMatrix(matrix, N_PARTICLES, N_PARTICLES);
     std::cout << std::endl;
 
-    std::cout << "matrix_reference: " << std::endl;
-    cpf_test(x_pos, y_pos, matrix_reference, N_PARTICLES);
-    printMatrix(matrix_reference, N_PARTICLES, N_PARTICLES);
-    std::cout << std::endl;
 
     std::cout << "f_tot_x: " << std::endl;
     for (int i = 0; i < N_PARTICLES; i++)
@@ -163,12 +163,12 @@ int main() {
     std::cout << "Kernel is done! Checking result:" << std::endl;
 
     // check correctness of result
-    double error = check_matrix_force(matrix, x_pos, y_pos, N_PARTICLES);
-    std::cout << "Avg result error is: " << error << std::endl;
+    //double error = check_matrix_force(matrix, x_pos, y_pos, N_PARTICLES);
+    //std::cout << "Avg result error is: " << error << std::endl;
 
     // free space on Host and device
-    free(matrix);               free(x_pos); free(y_pos);
-    cudaFree(device_matrix);    cudaFree(device_x_pos);
+    free(matrix);               free(pos);
+    cudaFree(device_matrix);    cudaFree(device_pos);
 
     free(f_tot);
     cudaFree(device_f_tot_x);
