@@ -2,7 +2,7 @@
 #include <string>
 #include <cuda_runtime.h>
 
-#define N_PARTICLES 45000l  // current max is circa 45.000
+#define N_PARTICLES 44000l  // current max is circa 44000l
 #define BLOCK_SIZE 32       // blocks will be 2D: BLOCK_SIZE*BLOCK_SIZE
 
 /**
@@ -29,8 +29,17 @@ __global__ void calculate_pairwise_difference(const float* arr, float* matrix, c
     i = i * blockDim.x + threadIdx.x;
     j = j * blockDim.y + threadIdx.y;
 
+    __shared__ float shared_array[BLOCK_SIZE];
+    if (threadIdx.y < blockDim.y && threadIdx.x == 0)
+        shared_array[threadIdx.y] = arr[j];
+
+    __syncthreads();
+
     if (i < matrix_edge_size && j < matrix_edge_size && i < j)
-        matrix[i * matrix_edge_size + j] = arr[i] - arr[j];
+        if (j > i) {
+            matrix[i * matrix_edge_size + j] = shared_array[threadIdx.y] - arr[i];
+            matrix[j * matrix_edge_size + i] = -matrix[i * matrix_edge_size + j];
+        }
 }
 
 void checkCudaError(const char* message);
@@ -40,9 +49,9 @@ void fill_array(float* arr, unsigned int size);
 bool check_matrix(const float* matrix, const float* array, unsigned int size);
 
 int main() {
-    printDeviceProperties(0);
+    //printDeviceProperties(0);
 
-    std::cout << N_PARTICLES << std::endl;
+    std::cout << N_PARTICLES << " particles." << std::endl;
 
     // calculate the number of blocks needed
     constexpr int blocks_per_row = N_PARTICLES % BLOCK_SIZE == 0 ?
@@ -69,15 +78,15 @@ int main() {
     checkCudaError("kernel launch");
     cudaDeviceSynchronize();
 
-    std::cout << "Kernel is done! Checking result." << std::endl;
-
     // copy back data
     cudaMemcpy(matrix, device_matrix, N_PARTICLES * N_PARTICLES * sizeof(float), cudaMemcpyDeviceToHost);
+
+    std::cout << "Kernel is done! Checking result:" << std::endl;
 
     // check correctness of result
     const bool correct = check_matrix(matrix, array, N_PARTICLES);
     const std::string s = correct ? " " : " not ";
-    std::cout << "Result is" << s << "correct" << std::endl;
+    std::cout << "Result is" << s << "correct." << std::endl;
 
     // free space on Host and device
     free(matrix);               free(array);
@@ -106,8 +115,8 @@ mapIndexTo2D(unsigned int index, const unsigned int n, unsigned int &i, unsigned
 
 bool check_matrix(const float* matrix, const float* array, const unsigned int size) {
     for (int i = 0; i < size; i++)
-        for (int j = i; j < size; j++)
-            if (array[i] - array[j] != matrix[i * size + j])
+        for (int j = 0; j < size; j++)
+            if (array[j] - array[i] != matrix[i * size + j])
                 return false;
 
     return true;
@@ -165,10 +174,10 @@ void printMatrix(const float* matrix, const int rows, const int cols) {
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             // Access the element at (i, j) in row-major order
-            std::cout << matrix[i * cols + j] << "  ";
-            if ((j + 1) % BLOCK_SIZE == 0) std::cout << "  ";
+            std::cout << matrix[i * cols + j] << "\t";
+            //if ((j + 1) % BLOCK_SIZE == 0) std::cout << "  ";
         }
         std::cout << std::endl; // Move to the next row
-        if ((i + 1) % BLOCK_SIZE == 0) std::cout << std::endl;
+        //if ((i + 1) % BLOCK_SIZE == 0) std::cout << std::endl;
     }
 }
