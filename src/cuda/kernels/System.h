@@ -7,6 +7,7 @@
 #include <cuda_runtime.h>
 #include <iostream>
 #include "../futils/futils.h"
+#include "../kernels/kernels.h"
 
 class System {
 
@@ -34,8 +35,8 @@ class System {
     // pointer to pairwise force components MATRIX on device : N_PARTICLES x N_PARTICLES
     double* d_force_matrix[DIM];
 
-    // pointer to resulting force components VECTORS on device : N_PARTICLES
-    double* d_force_tot[DIM];
+    // pointer to resulting force MATRIX on device : DIM x N_PARTICLES
+    double* d_force_tot;
 
 public:
     /**
@@ -71,7 +72,9 @@ public:
     /**
      * Simulates the system of particles, write the output file with the specified name.
      */
-    void simulate(std::string &out_file_name);
+    void simulate(const std::string &out_file_name);
+
+    void print_state() const;
 };
 
 #endif //SYSTEM_H

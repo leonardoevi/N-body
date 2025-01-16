@@ -19,12 +19,14 @@ mapIndexTo2D(unsigned int index, unsigned int n, unsigned int &i, unsigned int &
 
 /**
  * This kernel computes one component of all the forces between the particles and writes it in the matrix.
- * @param pos a dim x n_particles matrix, each column contains the coordinates of a particle: (x, y, z) in the case dim=3
- * @param component value between 0 and dim-1 specifies the component of the force needed (x, y, or z)
+ * @param pos a dim x n_particles matrix, each column contains the coordinates of a particle: (x, y, z) in the case dim=3.
+ * @param mass an n_particles array containing the mass of each particle.
+ * @param component value between 0 and dim-1 specifies the component of the force needed (x, y, or z).
  * @param matrix [i][j] will contain the value of the force along the specified axis on particle i caused by particle j.
  * It has to be an n_particles x n_particles matrix.
  */
 __global__ void calculate_pairwise_force_component( const double* pos,
+                                                    const double* mass,
                                                     unsigned int component,
                                                     double* matrix,
                                                     unsigned int n_particles,
@@ -39,6 +41,7 @@ __global__ void sum_over_rows(const double* mat, double* arr, unsigned int matri
  */
 __global__ void apply_motion(   double* pos,
                                 double* vel,
+                                const double* mass,
                                 const double* force,
                                 unsigned int n_particles,
                                 integration_type integration,

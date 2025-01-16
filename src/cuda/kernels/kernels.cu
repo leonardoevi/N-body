@@ -1,6 +1,6 @@
 #include "kernels.h"
 
-__global__ void calculate_pairwise_force_component(const double* pos, const unsigned int component, double* matrix, const unsigned int n_particles, const unsigned int blocks_per_row) {
+__global__ void calculate_pairwise_force_component(const double* pos, const double* mass, const unsigned int component, double* matrix, const unsigned int n_particles, const unsigned int blocks_per_row) {
     unsigned int i, j; mapIndexTo2D(blockIdx.x, blocks_per_row, i, j);
     i = i * blockDim.x + threadIdx.x;
     j = j * blockDim.y + threadIdx.y;
@@ -17,7 +17,7 @@ __global__ void calculate_pairwise_force_component(const double* pos, const unsi
             d = std::sqrt(d);
 
             if (d > 0) {
-                matrix[i * n_particles + j] = di[component] / (d * d * d);
+                matrix[i * n_particles + j] = G * di[component] / (d * d * d) * mass[j] * mass[i];
                 matrix[j * n_particles + i] = -matrix[i * n_particles + j];
             }
             free(di);
@@ -48,13 +48,13 @@ __global__ void sum_over_rows(const double* mat, double* arr, const unsigned int
     }
 }
 
-__global__ void apply_motion(double* pos, double* vel, const double* force, const unsigned int n_particles, const integration_type integration, const double dt) {
+__global__ void apply_motion(double* pos, double* vel, const double* mass, const double* force, const unsigned int n_particles, const integration_type integration, const double dt) {
     const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (i < n_particles) {
+    if (i < n_particles && mass[i] > 0.0) {
         if (integration == forwardEuler)
             for (int k = 0; k < DIM; k++) {
-                vel[n_particles * k + i] += force[n_particles * k + i] * dt;
+                vel[n_particles * k + i] += force[n_particles * k + i] / mass[i] * dt;
                 pos[n_particles * k + i] += vel[n_particles * k + i] * dt;
             }
     }
