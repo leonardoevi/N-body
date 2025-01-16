@@ -1,12 +1,14 @@
 #include <iostream>
 #include <string>
 #include <cuda_runtime.h>
-#include <valarray>
 #include <iomanip>
+#include <vector>
 
-#define N_PARTICLES 4  // current max is circa 31500
-#define BLOCK_SIZE 4       // blocks will be 2D: BLOCK_SIZE*BLOCK_SIZE
+#define N_PARTICLES 10000  // current max is circa 31500
+#define BLOCK_SIZE 32       // blocks will be 2D: BLOCK_SIZE*BLOCK_SIZE
 #define DIM 2
+
+#define COMPONENT 1     // x = 0, y = 1, z = 2. Must be < DIM
 
 /**
  * @param index
@@ -34,7 +36,8 @@ __global__ void calculate_pairwise_force_component(const double* pos, const unsi
 
     if (i < n_particles && j < n_particles && i < j)
         if (j > i) {
-            double* di =(double*) malloc(dim * sizeof(double));
+            //double* di =(double*) malloc(dim * sizeof(double));
+            double di[DIM];
             for (unsigned int k = 0; k < dim; ++k)
                 di[k] = pos[k * n_particles + j] - pos[k * n_particles + i];
 
@@ -43,9 +46,10 @@ __global__ void calculate_pairwise_force_component(const double* pos, const unsi
                 d += di[k] * di[k];
             d = std::sqrt(d);
 
-            matrix[i * n_particles + j] = di[component] / (d * d * d);
-            matrix[j * n_particles + i] = -matrix[i * n_particles + j];
-
+            if (d > 0) {
+                matrix[i * n_particles + j] = di[component] / (d * d * d);
+                matrix[j * n_particles + i] = -matrix[i * n_particles + j];
+            }
             free(di);
         }
 }
@@ -63,8 +67,8 @@ __global__ void sum_over_rows(const double* mat, double* arr, const unsigned int
 void checkCudaError(const char* message);
 void printMatrix(const std::string& name, const double* matrix, int rows, int cols);
 void fill_array(double* arr, unsigned int size);
-double check_matrix_force(const double* matrix, const double* pos, unsigned int component, unsigned int size);
 void printArray(const std::string& name, const double* arr, int size);
+double check_array_force_component(const double* array, const double* pos, const unsigned int component, const unsigned int size);
 
 int main() {
     std::cout << N_PARTICLES << " particles." << std::endl;
@@ -83,35 +87,38 @@ int main() {
     cudaMalloc(&device_matrix, N_PARTICLES*N_PARTICLES*sizeof(double)); checkCudaError("cudaMalloc1");
     cudaMalloc(&device_pos, N_PARTICLES * DIM * sizeof(double)); checkCudaError("cudaMalloc2");
 
-    pos[0] = 1.0; pos[1] = 3.0; pos[2] = 1.0; pos[3] = 3.0;
-    pos[4] = 1.0; pos[5] = 1.0; pos[6] = 3.0; pos[7] = 3.0;
-    //fill_array(pos, N_PARTICLES * DIM);
+    //pos[0] = 1.0; pos[1] = 3.0; pos[2] = 1.0; pos[3] = 3.0;
+    //pos[4] = 1.0; pos[5] = 1.0; pos[6] = 3.0; pos[7] = 3.0;
+    fill_array(pos, N_PARTICLES * DIM);
     cudaMemcpy(device_pos, pos, N_PARTICLES * DIM * sizeof(double), cudaMemcpyHostToDevice); checkCudaError("cudaMalloc4");
 
     // launch kernel
     dim3 block_dim(BLOCK_SIZE, BLOCK_SIZE);
     dim3 grid_dim(n_blocks);
-    calculate_pairwise_force_component<<<grid_dim, block_dim>>>(device_pos, 0, device_matrix, N_PARTICLES, DIM, blocks_per_row);
-    checkCudaError("kernel launch");
+    calculate_pairwise_force_component<<<grid_dim, block_dim>>>(device_pos, COMPONENT, device_matrix, N_PARTICLES, DIM, blocks_per_row);
+    checkCudaError("kernel 1 launch");
     cudaDeviceSynchronize();
 
     double *device_f_tot_x;
     cudaMalloc(&device_f_tot_x, N_PARTICLES * sizeof(double)); checkCudaError("cudaMalloc8");
     sum_over_rows<<<n_blocks, BLOCK_SIZE>>>(device_matrix, device_f_tot_x, N_PARTICLES);
+    checkCudaError("kernel 2 launch");
+    cudaDeviceSynchronize();
 
     auto *f_tot = static_cast<double *>(malloc(N_PARTICLES * sizeof(double)));
     cudaMemcpy(f_tot, device_f_tot_x, N_PARTICLES * sizeof(double), cudaMemcpyDeviceToHost);
 
-    // copy back data
-    cudaMemcpy(matrix, device_matrix, N_PARTICLES * N_PARTICLES * sizeof(double), cudaMemcpyDeviceToHost);
+    // copy back matrix data
+    //cudaMemcpy(matrix, device_matrix, N_PARTICLES * N_PARTICLES * sizeof(double), cudaMemcpyDeviceToHost);
 
-    printMatrix("matrix", matrix, N_PARTICLES, N_PARTICLES);
-    printArray("f_tot", f_tot, N_PARTICLES);
+    //printMatrix("matrix", matrix, N_PARTICLES, N_PARTICLES);
+    //printArray("f_tot", f_tot, N_PARTICLES);
 
     std::cout << "Kernel is done! Checking result:" << std::endl;
+    std::flush(std::cout);
 
     // check correctness of result
-    const double error = check_matrix_force(matrix, pos, 0, N_PARTICLES);
+    const double error = check_array_force_component(f_tot, pos, COMPONENT, N_PARTICLES);
     std::cout << "Total result error is: " << error << std::endl;
 
     // free space on Host and device
@@ -139,29 +146,26 @@ mapIndexTo2D(unsigned int index, const unsigned int n, unsigned int &i, unsigned
 }
 
 // DEBUG FUNCTIONS //
+double check_array_force_component(const double* array, const double* pos, const unsigned int component, const unsigned int size) {
+    double error = 0.0;
+    std::vector<double> f_tot(size);
 
-double check_matrix_force(const double* matrix, const double* pos, const unsigned int component, const unsigned int size) {
-    double delta = 0.0f;
-    double epsilon = 0.0001f;
-    for (int i = 0; i < size; i++)
-        for (int j = 0; j < size; j++)
-            if (i != j) {
-                double di[DIM];
-                for (unsigned int k = 0; k < DIM; ++k)
-                    di[k] = pos[k * size + j] - pos[k * size + i];
-
-                double d = 0;
-                for (unsigned int k = 0; k < DIM; ++k)
-                    d += di[k] * di[k];
-                d = std::sqrt(d);
-                const double tmp = di[component] / (d * d * d);
-                if (std::abs(matrix[i * size + j] - tmp) > epsilon)
-                        std::cerr << "[" << i << "," << j << "]" << matrix[i * size + j] - tmp << std::endl;
-                delta += matrix[i * size + j] - tmp;
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            if (i == j) continue;
+            double di[DIM];
+            double d = 0;
+            for (unsigned int k = 0; k < DIM; ++k) {
+                di[k] = pos[k * size + j] - pos[k * size + i];
+                d += di[k] * di[k];
             }
+            d = std::sqrt(d);
+            f_tot[i] += di[component] / (d * d * d);
+        }
+        error += f_tot[i] - array[i];
+    }
 
-
-    return delta;
+    return error;
 }
 
 void fill_array(double *arr, const unsigned int size) {
