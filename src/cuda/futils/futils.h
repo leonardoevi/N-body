@@ -9,7 +9,7 @@
 #include "../include/defines.h"
 #include "cuda_runtime.h"
 
-void checkCudaError(const char* message);
+int checkCudaError(const char* message);
 
 void printMatrix(const std::string& name, const double* matrix, int rows, int cols);
 

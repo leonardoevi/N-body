@@ -40,6 +40,13 @@ int main() {
     dim3 block_dim(BLOCK_SIZE, BLOCK_SIZE);
     dim3 grid_dim(n_blocks);
 
+    /*
+     * since either the force or the position vector has to be copied from the device to the host,
+     * one improvement may be to calculate the force on one component, and apply it to the position while the
+     * next component is being computed. Notice that all the "old" positions must be kept untouched
+     * until all the force component are computed-
+     */
+
     for (int cmp = 0; cmp < DIM; cmp++) {
         calculate_pairwise_force_component<<<grid_dim, block_dim>>>(device_pos, cmp, device_matrix, N_PARTICLES, blocks_per_row);
         checkCudaError("kernel 1 launch");

@@ -1,7 +1,7 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-#define N_PARTICLES 30000  // current max is circa 31500
+#define N_PARTICLES 300  // current max is circa 31500
 #define DIM 2
 #define D_T 0.1
 

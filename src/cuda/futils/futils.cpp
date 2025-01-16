@@ -28,12 +28,15 @@ void fill_array(double *arr, const unsigned int size) {
     }
 }
 
-void checkCudaError(const char* message) {
+int checkCudaError(const char* message) {
     cudaError_t error = cudaGetLastError();
     if (error != cudaSuccess) {
         std::cerr << "CUDA Error after " << message << ": " << cudaGetErrorString(error) << std::endl;
-        exit(-1); // Terminate the program on error
+        //exit(-1); // Terminate the program on error
+
+        return 1;
     }
+    return 0;
 }
 
 void printMatrix(const std::string& name, const double* matrix, const int rows, const int cols) {

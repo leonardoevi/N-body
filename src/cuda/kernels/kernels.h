@@ -2,7 +2,7 @@
 #define KERNELS_H
 
 #include "../include/defines.h"
-#include "integration_type.h"
+#include "../include/integration_type.h"
 
 /**
  * @param index
@@ -24,7 +24,11 @@ mapIndexTo2D(unsigned int index, unsigned int n, unsigned int &i, unsigned int &
  * @param matrix [i][j] will contain the value of the force along the specified axis on particle i caused by particle j.
  * It has to be an n_particles x n_particles matrix.
  */
-__global__ void calculate_pairwise_force_component(const double* pos, unsigned int component, double* matrix, unsigned int n_particles, unsigned int blocks_per_row);
+__global__ void calculate_pairwise_force_component( const double* pos,
+                                                    unsigned int component,
+                                                    double* matrix,
+                                                    unsigned int n_particles,
+                                                    unsigned int blocks_per_row );
 
 __global__ void sum_over_rows(const double* mat, double* arr, unsigned int matrix_edge_size);
 
@@ -33,6 +37,11 @@ __global__ void sum_over_rows(const double* mat, double* arr, unsigned int matri
  * All three matrices must be DIM * n_particles, and contain on each row the components parallel to one axis.
  * Execute with a 1D grid of 1D blocks. (Might be faster serially)
  */
-__global__ void apply_motion(double* pos, double* vel, const double* force, unsigned int n_particles, integration_type integration, double dt);
+__global__ void apply_motion(   double* pos,
+                                double* vel,
+                                const double* force,
+                                unsigned int n_particles,
+                                integration_type integration,
+                                double dt   );
 
 #endif //KERNELS_H
