@@ -4,7 +4,7 @@ int System::initialize_device() {
     int errors = 0;
 
     // allocate memory
-    std::cout << "Allocating device memory." << std::endl;
+    std::cout << "Allocating device memory..." << std::endl;
     cudaMalloc(&this->d_pos, sizeof(double) * DIM * n_particles);   errors += checkCudaError("cudaMalloc d_pos");
     cudaMalloc(&this->d_vel, sizeof(double) * DIM * n_particles);   errors += checkCudaError("cudaMalloc d_vel");
 
@@ -16,7 +16,7 @@ int System::initialize_device() {
     }
 
     // copy data to device
-    std::cout << "Moving data to device." << std::endl;
+    std::cout << "Moving initial data to device..." << std::endl;
     cudaMemcpy(this->d_pos, pos.get(), sizeof(double) * DIM * n_particles, cudaMemcpyHostToDevice); errors += checkCudaError("cudaMemcpy pos");
     cudaMemcpy(this->d_vel, vel.get(), sizeof(double) * DIM * n_particles, cudaMemcpyHostToDevice); errors += checkCudaError("cudaMemcpy vel");
 

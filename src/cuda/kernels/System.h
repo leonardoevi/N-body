@@ -22,10 +22,10 @@ class System {
     // =========================== POINTERS TO DATA ======================================= //
 
     // pointers to the position and velocity MATRICES : DIM x N_PARTICLES
-    std::unique_ptr<double> pos, vel;
+    std::unique_ptr<double[]> pos, vel;
 
     // pointer to mass vector
-    std::unique_ptr<double> mass;
+    std::unique_ptr<double[]> mass;
 
     // pos, vel, mass, on device
     double *d_pos, *d_vel;
@@ -49,9 +49,9 @@ public:
      */
     System(const unsigned int n_particles_, const double t_max_, const double dt_,
                     const enum integration_type integration_,
-                    std::unique_ptr<double> pos_,
-                    std::unique_ptr<double> vel_,
-                    std::unique_ptr<double> mass_)
+                    std::unique_ptr<double[]> pos_,
+                    std::unique_ptr<double[]> vel_,
+                    std::unique_ptr<double[]> mass_)
         : n_particles(n_particles_),
           t_max(t_max_),
           dt(dt_),

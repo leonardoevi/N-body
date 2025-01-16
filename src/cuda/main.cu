@@ -1,79 +1,20 @@
 #include <iostream>
-#include <cuda_runtime.h>
-#include <iomanip>
 
 #include "include/defines.h"
-#include "kernels/kernels.h"
-#include "futils/futils.h"
+#include "kernels/System.h"
 
 int main() {
     std::cout << N_PARTICLES << " particles." << std::endl;
 
-    // calculate the number of blocks needed
-    constexpr int blocks_per_row = N_PARTICLES % BLOCK_SIZE == 0 ?
-                                       N_PARTICLES / BLOCK_SIZE : N_PARTICLES / BLOCK_SIZE + 1;
-    constexpr int n_blocks = blocks_per_row * (blocks_per_row + 1) / 2;
+    auto pos = std::make_unique<double[]>(DIM * N_PARTICLES);
+    pos[0] = 1.0; pos[1] = 3.0; pos[2] = 1.0; pos[3] = 1.0;
 
-    // allocate pos, vel
-    auto *pos = static_cast<double *>(malloc(N_PARTICLES * DIM * sizeof(double)));
-    auto *vel = static_cast<double *>(malloc(N_PARTICLES * DIM * sizeof(double)));
+    auto vel = std::make_unique<double[]>(DIM * N_PARTICLES);
 
-    // allocate matrix, pos, and vel array on device
-    double *device_matrix, *device_pos, *device_vel;
-    cudaMalloc(&device_matrix, N_PARTICLES*N_PARTICLES*sizeof(double)); checkCudaError("cudaMalloc1");
-    cudaMalloc(&device_pos, N_PARTICLES * DIM * sizeof(double));        checkCudaError("cudaMalloc2");
-    cudaMalloc(&device_vel, N_PARTICLES * DIM * sizeof(double));        checkCudaError("cudaMalloc2.5");
+    auto mass = std::make_unique<double[]>(N_PARTICLES);
 
-    // fill initial conditions
-    fill_array(pos, N_PARTICLES*DIM);
-    fill_array(vel, N_PARTICLES*DIM);
-
-    // copy initial condition on deviuce
-    cudaMemcpy(device_pos, pos, N_PARTICLES * DIM * sizeof(double), cudaMemcpyHostToDevice); checkCudaError("cudaMalloc4");
-    cudaMemcpy(device_vel, vel, N_PARTICLES * DIM * sizeof(double), cudaMemcpyHostToDevice); checkCudaError("cudaMalloc4.5");
-
-    // allocate force array on device
-    double *device_force;
-    cudaMalloc(&device_force, N_PARTICLES * DIM * sizeof(double));
-
-    // launch kernel
-    dim3 block_dim(BLOCK_SIZE, BLOCK_SIZE);
-    dim3 grid_dim(n_blocks);
-
-    /*
-     * since either the force or the position vector has to be copied from the device to the host,
-     * one improvement may be to calculate the force on one component, and apply it to the position while the
-     * next component is being computed. Notice that all the "old" positions must be kept untouched
-     * until all the force component are computed-
-     */
-
-    for (int cmp = 0; cmp < DIM; cmp++) {
-        calculate_pairwise_force_component<<<grid_dim, block_dim>>>(device_pos, cmp, device_matrix, N_PARTICLES, blocks_per_row);
-        checkCudaError("kernel 1 launch");
-        cudaDeviceSynchronize();
-
-        // calculate total force (1 component) on each particle
-        sum_over_rows<<<n_blocks, BLOCK_SIZE>>>(device_matrix, device_force + (cmp * N_PARTICLES), N_PARTICLES);
-        checkCudaError("kernel 2 launch");
-        cudaDeviceSynchronize();
-    }
-
-    // apply force on particles
-    apply_motion<<<N_PARTICLES % 1024 == 0 ? N_PARTICLES / 1024 : N_PARTICLES / 1024 + 1,1024>>>(device_pos, device_vel, device_force, N_PARTICLES, forwardEuler, D_T);
-    cudaDeviceSynchronize();
-
-    // copy back new position
-    cudaMemcpy(pos, device_pos, N_PARTICLES * DIM * sizeof(double), cudaMemcpyDeviceToHost); checkCudaError("cudaMalloc9");
-    cudaMemcpy(vel, device_vel, N_PARTICLES * DIM * sizeof(double), cudaMemcpyDeviceToHost); checkCudaError("cudaMalloc9.5");
-
-
-    // free space on Host and device
-    cudaFree(device_matrix);
-
-    free(pos);  cudaFree(device_pos);
-    free(vel);  cudaFree(device_vel);
-
-    cudaFree(device_force);
+    System system(N_PARTICLES, 1.0, 0.1, forwardEuler, (std::move(pos)), (std::move(vel)), (std::move(mass)));
+    system.initialize_device();
 
     return EXIT_SUCCESS;
 }
