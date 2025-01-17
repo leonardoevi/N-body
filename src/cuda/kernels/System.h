@@ -20,6 +20,8 @@ class System {
 
     const enum integration_type integration_type;
 
+    cudaStream_t streams[DIM];
+
     // =========================== POINTERS TO DATA ======================================= //
 
     // pointers to the position and velocity MATRICES : DIM x N_PARTICLES
