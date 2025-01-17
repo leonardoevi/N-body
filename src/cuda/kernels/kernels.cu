@@ -16,8 +16,9 @@ __global__ void calculate_pairwise_force_component(const double* pos, const doub
                 d += di[k] * di[k];
             d = std::sqrt(d);
 
+            d = d * d * d;
             if (d > 0) {
-                matrix[i * n_particles + j] = G * di[component] / (d * d * d) * mass[j] * mass[i];
+                matrix[i * n_particles + j] = G * di[component] / (d > D_MIN ? d : D_MIN) * mass[j] * mass[i];
                 matrix[j * n_particles + i] = -matrix[i * n_particles + j];
             }
             free(di);

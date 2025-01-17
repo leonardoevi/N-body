@@ -16,6 +16,8 @@ int System::initialize_device() {
 
     cudaMalloc(&this->d_force_tot, sizeof(double) * DIM * n_particles);    errors += checkCudaError("cudaMalloc d_force_tot");
 
+    if (errors != 0) return errors;
+
     // copy data to device
     std::cout << "Moving initial data to device..." << std::endl;
     cudaMemcpy(this->d_pos, pos.get(), sizeof(double) * DIM * n_particles, cudaMemcpyHostToDevice); errors += checkCudaError("cudaMemcpy pos");
@@ -45,7 +47,7 @@ void System::simulate(const std::string &out_file_name) {
 
     // write the number of particles in the system
     outFile << std::fixed << std::setprecision(std::numeric_limits<double>::digits10 + 1);
-    outFile << n_particles << std::endl;
+    outFile << n_particles << " " << t_max << " " << dt << std::endl;
 
     // write the mass array
     for (int i = 0; i < n_particles; i++)
@@ -69,6 +71,8 @@ void System::simulate(const std::string &out_file_name) {
         int grid_dim_1D = n_particles % 1024 == 0 ? n_particles / 1024 : n_particles / 1024 + 1;
         int block_dim_1D = 1024;
 
+        std::cout << "Launching kernels" << std::endl;
+
         for (int i = 0; i < DIM; i++) {
             calculate_pairwise_force_component<<<grid_dim_2D, block_dim_2D, 0, streams[i]>>>
                 (d_pos, d_mass, i, d_force_matrix[i], n_particles, blocks_per_row);
@@ -83,14 +87,21 @@ void System::simulate(const std::string &out_file_name) {
 
         cudaDeviceSynchronize();
 
+        std::cout << "kernels done" << std::endl;
+        std::cout << "Copying back data from device" << std::endl;
+
         // copy back pos and vel matrices
         cudaMemcpy(pos.get(), d_pos, sizeof(double) * DIM * n_particles, cudaMemcpyDeviceToHost);
         cudaMemcpy(vel.get(), d_vel, sizeof(double) * DIM * n_particles, cudaMemcpyDeviceToHost);
 
         this->t_curr += this->dt;
 
+        std::cout << "Writing data to file" << std::endl;
+
         // output current state of the system
         write_state();
+
+        std::cout << "Cycle completed for time: " << t_curr << std::endl;
     }
 }
 

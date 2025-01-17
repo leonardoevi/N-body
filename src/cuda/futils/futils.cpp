@@ -24,7 +24,7 @@ double check_array_force_component(const double* array, const double* pos, const
 
 void fill_array(double *arr, const unsigned int size) {
     for (int i = 0; i < size; i++) {
-        arr[i] = rand() / (double) RAND_MAX;
+        arr[i] = rand() / (double) RAND_MAX * 10;
     }
 }
 
