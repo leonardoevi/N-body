@@ -1,7 +1,7 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-#define DIM 2
+#define DIM 3
 #define G 1.0
 
 #define N_PARTICLES 3  // current max is circa 22.000

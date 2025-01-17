@@ -8,6 +8,7 @@
 #include <iostream>
 #include "../futils/futils.h"
 #include "../kernels/kernels.h"
+#include <fstream>
 
 class System {
 
@@ -20,7 +21,11 @@ class System {
 
     const enum integration_type integration_type;
 
+    // array of CUDA streams, DIM in total, used to compute force components in parallel
     cudaStream_t streams[DIM];
+
+    // output file stream
+    std::ofstream outFile;
 
     // =========================== POINTERS TO DATA ======================================= //
 
@@ -77,6 +82,11 @@ public:
     void simulate(const std::string &out_file_name);
 
     void print_state() const;
+
+private:
+
+    void write_state();
+
 };
 
 #endif //SYSTEM_H

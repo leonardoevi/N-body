@@ -33,14 +33,34 @@ int System::initialize_device() {
 }
 
 void System::simulate(const std::string &out_file_name) {
+
+    // open output file
+    outFile.open(out_file_name);
+
+    // Check if the file was opened successfully
+    if (!outFile) {
+        std::cerr << "Error: Could not open the file " << out_file_name << " for writing." << std::endl;
+        throw std::runtime_error("Error: Could not open file " + out_file_name + " for writing.");
+    }
+
+    // write the number of particles in the system
+    outFile << std::fixed << std::setprecision(std::numeric_limits<double>::digits10 + 1);
+    outFile << n_particles << std::endl;
+
+    // write the mass array
+    for (int i = 0; i < n_particles; i++)
+        outFile << mass[i] << " ";
+    outFile << std::endl;
+
+    // output initial state of the system
+    write_state();
+
     while (this->t_curr < this->t_max) {
 
         // compute dimensions for kernel launch
         const int blocks_per_row = n_particles % BLOCK_SIZE == 0 ?
                                    n_particles / BLOCK_SIZE : n_particles / BLOCK_SIZE + 1;
         const int n_blocks = blocks_per_row * (blocks_per_row + 1) / 2;
-
-        // allocate DIM cuda streams for parallel computation of force components
 
         // calculate grid and block size for each kernel launch
         dim3 grid_dim_2D(n_blocks);
@@ -68,7 +88,25 @@ void System::simulate(const std::string &out_file_name) {
         cudaMemcpy(vel.get(), d_vel, sizeof(double) * DIM * n_particles, cudaMemcpyDeviceToHost);
 
         this->t_curr += this->dt;
+
+        // output current state of the system
+        write_state();
     }
+}
+
+void System::write_state() {
+    outFile << t_curr << std::endl;
+
+    // on each row (assuming DIM = 3) we expect
+    // pos_x pos_y pos_z vel_x vel_y vel_z of the j-th particle
+    for (int j = 0; j < n_particles; j++) {
+        for (int k = 0; k < DIM; k++)
+            outFile << pos[j + k * n_particles] << " ";
+        for (int k = 0; k < DIM; k++)
+            outFile << vel[j + k * n_particles] << " ";
+        outFile << std::endl;
+    }
+
 }
 
 void System::print_state() const {
