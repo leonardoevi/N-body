@@ -5,7 +5,7 @@
 #define G 1.0
 #define D_MIN 1.0e-3
 
-#define N_PARTICLES 10  // current max is circa 22.000
+#define N_PARTICLES 2000  // current max is circa 22.000
 #define D_T 0.1
 
 #define BLOCK_SIZE 4       // blocks will be 2D: BLOCK_SIZE*BLOCK_SIZE

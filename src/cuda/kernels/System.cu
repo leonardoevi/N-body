@@ -1,5 +1,34 @@
 #include "System.h"
 
+void* write_system_state(void* system) {
+    auto* system_obj = static_cast<System *>(system);
+
+    while (true) {
+        pthread_mutex_lock(&system_obj->mutex);
+
+        // wait for the need of writing memory to file
+        while (system_obj->print_system == false) {
+            // check if termination has been requested
+            if (system_obj->kys == true) {
+                pthread_mutex_unlock(&system_obj->mutex);
+                return nullptr;
+            }
+
+            // release the lock and wait for the condition to be signaled
+            pthread_cond_wait(&system_obj->cond, &system_obj->mutex);
+        }
+
+        // now it is time to write the system to file
+        system_obj->write_state();
+
+        // set the flag
+        system_obj->print_system = false;
+
+        // job is done, release the lock
+        pthread_mutex_unlock(&system_obj->mutex);
+    }
+}
+
 int System::initialize_device() {
     int errors = 0;
 
@@ -45,6 +74,9 @@ void System::simulate(const std::string &out_file_name) {
         throw std::runtime_error("Error: Could not open file " + out_file_name + " for writing.");
     }
 
+    // summon the slave thread
+    pthread_create(&system_printer, nullptr, write_system_state, (void*)this);
+
     // write the number of particles in the system
     outFile << std::fixed << std::setprecision(std::numeric_limits<double>::digits10 + 1);
     outFile << n_particles << " " << t_max << " " << dt << std::endl;
@@ -54,8 +86,11 @@ void System::simulate(const std::string &out_file_name) {
         outFile << mass[i] << " ";
     outFile << std::endl;
 
-    // output initial state of the system
-    write_state();
+    // ask slave thread to print the state of the system
+    pthread_mutex_lock(&mutex);
+    print_system = true;
+    pthread_cond_signal(&cond);
+    pthread_mutex_unlock(&mutex);
 
     while (this->t_curr < this->t_max) {
 
@@ -71,8 +106,6 @@ void System::simulate(const std::string &out_file_name) {
         int grid_dim_1D = n_particles % 1024 == 0 ? n_particles / 1024 : n_particles / 1024 + 1;
         int block_dim_1D = 1024;
 
-        std::cout << "Launching kernels" << std::endl;
-
         for (int i = 0; i < DIM; i++) {
             calculate_pairwise_force_component<<<grid_dim_2D, block_dim_2D, 0, streams[i]>>>
                 (d_pos, d_mass, i, d_force_matrix[i], n_particles, blocks_per_row);
@@ -87,21 +120,20 @@ void System::simulate(const std::string &out_file_name) {
 
         cudaDeviceSynchronize();
 
-        std::cout << "kernels done" << std::endl;
-        std::cout << "Copying back data from device" << std::endl;
+        // wait for consumer to end its job, acquire lock
+        pthread_mutex_lock(&mutex);
+        {
+            // copy back pos and vel matrices from device
+            cudaMemcpy(pos.get(), d_pos, sizeof(double) * DIM * n_particles, cudaMemcpyDeviceToHost);
+            cudaMemcpy(vel.get(), d_vel, sizeof(double) * DIM * n_particles, cudaMemcpyDeviceToHost);
 
-        // copy back pos and vel matrices
-        cudaMemcpy(pos.get(), d_pos, sizeof(double) * DIM * n_particles, cudaMemcpyDeviceToHost);
-        cudaMemcpy(vel.get(), d_vel, sizeof(double) * DIM * n_particles, cudaMemcpyDeviceToHost);
+            this->t_curr += this->dt;
+        }
 
-        this->t_curr += this->dt;
-
-        std::cout << "Writing data to file" << std::endl;
-
-        // output current state of the system
-        write_state();
-
-        std::cout << "Cycle completed for time: " << t_curr << std::endl;
+        // release lock and signal consumer
+        print_system = true;
+        pthread_mutex_unlock(&mutex);
+        pthread_cond_signal(&cond);
     }
 }
 
@@ -143,6 +175,17 @@ System::~System() {
         cudaFree(this->d_force_matrix[i]);
 
     cudaFree(this->d_force_tot);
+
+    // request the slave thread to terminate
+    pthread_mutex_lock(&mutex);
+    kys = true;
+    pthread_mutex_unlock(&mutex);
+    pthread_cond_signal(&cond);
+
+    std::cout << "Waiting for threads to finish..." << std::endl;
+
+    // wait for slave thead to terminate
+    pthread_join(system_printer, nullptr);
 
     std::cout << "Successfully released System Object" << std::endl;
 }

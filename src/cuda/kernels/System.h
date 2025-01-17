@@ -10,6 +10,8 @@
 #include "../kernels/kernels.h"
 #include <fstream>
 
+#include <pthread.h>
+
 class System {
 
     // number of particles in the system
@@ -44,6 +46,19 @@ class System {
 
     // pointer to resulting force MATRIX on device : DIM x N_PARTICLES
     double* d_force_tot;
+
+    // =========================== THREAD ======================================= //
+
+    // slave thread that will print the system state while the new one is being computed
+    pthread_t system_printer;
+
+    // synchronization objects
+    pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+
+    // variable to signal that the system state has to be printed
+    bool print_system = false;
+    bool kys = false;
 
 public:
     /**
@@ -82,6 +97,8 @@ public:
     void simulate(const std::string &out_file_name);
 
     void print_state() const;
+
+    friend void* write_system_state(void* system);
 
 private:
 
