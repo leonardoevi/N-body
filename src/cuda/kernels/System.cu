@@ -116,7 +116,7 @@ void System::simulate(const std::string &out_file_name) {
 
         // using the blocking behaviour of the default stream, all the force components should be computed before
         // this kernel is starting to be executed
-        apply_motion<<<grid_dim_1D, block_dim_1D>>>(d_pos, d_vel, d_mass, d_force_tot, n_particles, forwardEuler, dt);
+        apply_motion<<<grid_dim_1D, block_dim_1D>>>(d_pos, d_vel, d_mass, d_force_tot, n_particles, dt);
 
         cudaDeviceSynchronize();
 

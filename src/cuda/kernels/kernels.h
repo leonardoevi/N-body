@@ -44,7 +44,6 @@ __global__ void apply_motion(   double* pos,
                                 const double* mass,
                                 const double* force,
                                 unsigned int n_particles,
-                                integration_type integration,
                                 double dt   );
 
 #endif //KERNELS_H

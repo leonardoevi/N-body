@@ -18,7 +18,7 @@ __global__ void calculate_pairwise_force_component(const double* pos, const doub
 
             d = d * d * d;
             if (d > 0) {
-                matrix[i * n_particles + j] = G * di[component] / (d > D_MIN ? d : D_MIN) * mass[j] * mass[i];
+                matrix[i * n_particles + j] = G * di[component] / (d > D_MIN ? d : D_MIN) * mass[j];
                 matrix[j * n_particles + i] = -matrix[i * n_particles + j];
             }
             free(di);
@@ -49,14 +49,12 @@ __global__ void sum_over_rows(const double* mat, double* arr, const unsigned int
     }
 }
 
-__global__ void apply_motion(double* pos, double* vel, const double* mass, const double* force, const unsigned int n_particles, const integration_type integration, const double dt) {
+__global__ void apply_motion(double* pos, double* vel, const double* mass, const double* force, const unsigned int n_particles, const double dt) {
     const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (i < n_particles && mass[i] > 0.0) {
-        if (integration == forwardEuler)
-            for (int k = 0; k < DIM; k++) {
-                vel[n_particles * k + i] += force[n_particles * k + i] / mass[i] * dt;
-                pos[n_particles * k + i] += vel[n_particles * k + i] * dt;
-            }
+    if (i < n_particles && mass[i] > 0.0)
+        for (int k = 0; k < DIM; k++) {
+            vel[n_particles * k + i] += force[n_particles * k + i] / mass[i] * dt;
+            pos[n_particles * k + i] += vel[n_particles * k + i] * dt;
     }
 }
