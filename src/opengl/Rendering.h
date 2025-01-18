@@ -26,7 +26,7 @@ class Rendering {
 
 
   public:
-
+      static bool isPaused;
 
   Rendering(const int width, const int height): width(width), height(height) {
           //Sanity check
@@ -62,8 +62,15 @@ class Rendering {
           glfwSetMouseButtonCallback(window, mouse_button_callback);
 
           glfwSetScrollCallback(window, scroll_callback);
+          glfwSetKeyCallback(window, key_callback);
 
         }
+
+  static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+      isPaused = !isPaused; // Toggle pause
+    }
+  }
 
   static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
           // Adjust the radius based on scroll input
@@ -169,15 +176,21 @@ class Rendering {
           for (const auto& p : positions) {
 
             float vel = velocities[i].norm();
-            float color = fmin(1.0f, vel / v_max); // Normalize distance for color
+            float color = fmin(1.0f, vel / v_max); // Normalize velocity for color
 
-            glColor3f(color, 1.0f - color, 0.0); // Gradient from blue to red
+            if (color <= 0.5f) {
+              // Purple to Orange transition
+              glColor3f(color * 2.0f, color, 0.5f);
+            } else {
+              // Orange to Yellow transition
+              glColor3f(1.0f, 0.5f + (color - 0.5f) * 2.0f, (color - 0.5f) * 1.5f);
+            }
             glPushMatrix();
             if (DIM == 3)
               glTranslatef(p[0], p[1], p[2]);
             else
               glTranslatef(p[0], p[1], 0.0);
-            renderSphere(masses[i] / m_max * 0.1); // Render a sphere with radius 0.1
+            renderSphere(masses[i] / m_max * 0.05); // Render a sphere with radius 0.1
             glPopMatrix();
 
             i++;
@@ -222,6 +235,7 @@ float Rendering::lastX = 400.0f;
 float Rendering::lastY = 300.0f;
 bool Rendering::firstMouse = true;
 bool Rendering::isDragging = false;
+bool Rendering::isPaused = false;
 
 
 #endif //RENDERING_H

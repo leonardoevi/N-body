@@ -51,6 +51,10 @@ int main() {
     long double current_time;
     while (file >> current_time ) {
 
+        while (Rendering::isPaused) {
+            rendering.show(positions, velocities, masses);
+        }
+
         for (int i = 0; i < num_particles; i++) {
             for (int j = 0; j < DIM; j++) {
                 file >> positions[i][j];
