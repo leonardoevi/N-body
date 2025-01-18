@@ -1,15 +1,15 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <iomanip>
 
 #include "Rendering.h"
 #include "../openmp/Vector.hpp"
 #include "../../include/define.h"
 
-using namespace std;
-
 int main() {
-    ifstream file("output_leapfrog.txt");
+    ifstream file("../out/out.txt");
 
     if (!file.is_open()) {
       cout << "Error opening file" << endl;
@@ -18,11 +18,11 @@ int main() {
 
     int num_particles;
     file >> num_particles;
-    cout << fixed << setprecision(numeric_limits<double>::digits10 + 1);
+    cout << fixed << std::setprecision(numeric_limits<double>::digits10 + 1);
 
-    vector<Vector<DIM>> positions(num_particles);
-    vector<Vector<DIM>> velocities(num_particles);
-    vector<double> masses(num_particles);
+    std::vector<Vector<DIM>> positions(num_particles);
+    std::vector<Vector<DIM>> velocities(num_particles);
+    std::vector<double> masses(num_particles);
 
     // Getting width height ratio of primary monitor
     if (!glfwInit()) {

@@ -1,13 +1,14 @@
 #include <fstream>
 #include <iostream>
+#include <chrono>
 #include "Vector.hpp"
 
 using namespace std;
 
 template <unsigned int number_particles, unsigned int dimension> class Solver {
 
-    chrono::steady_clock::time_point start = chrono::high_resolution_clock::now();
-    chrono::steady_clock::time_point end = chrono::high_resolution_clock::now();
+    chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
+    chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();
 
     constexpr static double G = 10.0;
     double total_time, delta_time, current_time;

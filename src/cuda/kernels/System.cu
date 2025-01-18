@@ -78,7 +78,7 @@ void System::simulate(const std::string &out_file_name) {
 
     // write the number of particles in the system
     outFile << std::fixed << std::setprecision(std::numeric_limits<double>::digits10 + 1);
-    outFile << n_particles << " " << t_max << " " << dt << std::endl;
+    outFile << n_particles << std::endl;
 
     // write the mass array
     for (int i = 0; i < n_particles; i++)
@@ -110,7 +110,7 @@ void System::simulate(const std::string &out_file_name) {
             calculate_pairwise_force_component<<<grid_dim_2D, block_dim_2D, 0, streams[i]>>>
                 (d_pos, d_mass, i, d_force_matrix[i], n_particles, blocks_per_row);
 
-            sum_over_rows<<<grid_dim_1D, block_dim_1D, 1024 * sizeof(double) ,streams[i]>>>
+            sum_over_rows<<<grid_dim_1D, block_dim_1D, 0 ,streams[i]>>>
                 (d_force_matrix[i], (d_force_tot + i * n_particles), n_particles);
         }
 

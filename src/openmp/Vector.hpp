@@ -2,6 +2,8 @@
 #ifndef VECTOR_HPP
 #define VECTOR_HPP
 
+#include <array>
+
 #include <iostream>
 #include <cmath>
 
