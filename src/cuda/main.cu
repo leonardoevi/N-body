@@ -21,7 +21,7 @@ int main() {
 
     auto mass = std::make_unique<double[]>(N_PARTICLES);
     for (int i = 0; i < N_PARTICLES; i++)
-        mass[i] = 1.0;
+        mass[i] = 1.5;
 
     System system(N_PARTICLES, 80.0, 0.04, forwardEuler, (std::move(pos)), (std::move(vel)), (std::move(mass)));
     if (system.initialize_device() != 0)

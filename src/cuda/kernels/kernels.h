@@ -25,7 +25,7 @@ mapIndexTo2D(unsigned int index, unsigned int n, unsigned int &i, unsigned int &
  * @param matrix [i][j] will contain the value of the force along the specified axis on particle i caused by particle j.
  * It has to be an n_particles x n_particles matrix.
  */
-__global__ void calculate_pairwise_force_component( const double* pos,
+__global__ void calculate_pairwise_acceleration_component( const double* pos,
                                                     const double* mass,
                                                     unsigned int component,
                                                     double* matrix,
@@ -41,7 +41,6 @@ __global__ void sum_over_rows(const double* mat, double* arr, unsigned int matri
  */
 __global__ void apply_motion(   double* pos,
                                 double* vel,
-                                const double* mass,
                                 const double* force,
                                 unsigned int n_particles,
                                 double dt   );

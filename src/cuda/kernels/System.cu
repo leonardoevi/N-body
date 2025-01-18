@@ -40,10 +40,10 @@ int System::initialize_device() {
     cudaMalloc(&this->d_mass, sizeof(double) * n_particles);        errors += checkCudaError("cudaMalloc d_mass");
 
     for (int i = 0; i < DIM; i++) {
-        cudaMalloc(&this->d_force_matrix[i], sizeof(double) * n_particles * n_particles);   errors += checkCudaError(("cudaMalloc d_force_matrix[" + std::to_string(i) + "]").c_str());
+        cudaMalloc(&this->d_acc_matrix[i], sizeof(double) * n_particles * n_particles);   errors += checkCudaError(("cudaMalloc d_force_matrix[" + std::to_string(i) + "]").c_str());
     }
 
-    cudaMalloc(&this->d_force_tot, sizeof(double) * DIM * n_particles);    errors += checkCudaError("cudaMalloc d_force_tot");
+    cudaMalloc(&this->d_acc_tot, sizeof(double) * DIM * n_particles);    errors += checkCudaError("cudaMalloc d_force_tot");
 
     if (errors != 0) return errors;
 
@@ -107,16 +107,16 @@ void System::simulate(const std::string &out_file_name) {
     while (this->t_curr < this->t_max) {
 
         for (int i = 0; i < DIM; i++) {
-            calculate_pairwise_force_component<<<grid_dim_2D, block_dim_2D, 0, streams[i]>>>
-                (d_pos, d_mass, i, d_force_matrix[i], n_particles, blocks_per_row);
+            calculate_pairwise_acceleration_component<<<grid_dim_2D, block_dim_2D, 0, streams[i]>>>
+                (d_pos, d_mass, i, d_acc_matrix[i], n_particles, blocks_per_row);
 
             sum_over_rows<<<grid_dim_1D, block_dim_1D, 0 ,streams[i]>>>
-                (d_force_matrix[i], (d_force_tot + i * n_particles), n_particles);
+                (d_acc_matrix[i], (d_acc_tot + i * n_particles), n_particles);
         }
 
         // using the blocking behaviour of the default stream, all the force components should be computed before
         // this kernel is starting to be executed
-        apply_motion<<<grid_dim_1D, block_dim_1D>>>(d_pos, d_vel, d_mass, d_force_tot, n_particles, dt);
+        apply_motion<<<grid_dim_1D, block_dim_1D>>>(d_pos, d_vel, d_acc_tot, n_particles, dt);
 
         cudaDeviceSynchronize();
 
@@ -175,9 +175,9 @@ System::~System() {
     cudaFree(this->d_mass);
 
     for (int i = 0; i < DIM ; i++)
-        cudaFree(this->d_force_matrix[i]);
+        cudaFree(this->d_acc_matrix[i]);
 
-    cudaFree(this->d_force_tot);
+    cudaFree(this->d_acc_tot);
 
     // request the slave thread to terminate
     pthread_mutex_lock(&mutex);

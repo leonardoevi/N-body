@@ -1,6 +1,6 @@
 #include "kernels.h"
 
-__global__ void calculate_pairwise_force_component(const double* pos, const double* mass, const unsigned int component, double* matrix, const unsigned int n_particles, const unsigned int blocks_per_row) {
+__global__ void calculate_pairwise_acceleration_component(const double* pos, const double* mass, const unsigned int component, double* matrix, const unsigned int n_particles, const unsigned int blocks_per_row) {
     unsigned int i, j; mapIndexTo2D(blockIdx.x, blocks_per_row, i, j);
     i = i * blockDim.x + threadIdx.x;
     j = j * blockDim.y + threadIdx.y;
@@ -49,12 +49,12 @@ __global__ void sum_over_rows(const double* mat, double* arr, const unsigned int
     }
 }
 
-__global__ void apply_motion(double* pos, double* vel, const double* mass, const double* force, const unsigned int n_particles, const double dt) {
+__global__ void apply_motion(double* pos, double* vel, const double* force, const unsigned int n_particles, const double dt) {
     const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (i < n_particles && mass[i] > 0.0)
+    if (i < n_particles)
         for (int k = 0; k < DIM; k++) {
-            vel[n_particles * k + i] += force[n_particles * k + i] / mass[i] * dt;
+            vel[n_particles * k + i] += force[n_particles * k + i] * dt;
             pos[n_particles * k + i] += vel[n_particles * k + i] * dt;
     }
 }

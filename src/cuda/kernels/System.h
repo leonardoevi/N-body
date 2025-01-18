@@ -42,10 +42,10 @@ class System {
     double *d_mass;
 
     // pointer to pairwise force components MATRIX on device : N_PARTICLES x N_PARTICLES
-    double* d_force_matrix[DIM];
+    double* d_acc_matrix[DIM];
 
     // pointer to resulting force MATRIX on device : DIM x N_PARTICLES
-    double* d_force_tot;
+    double* d_acc_tot;
 
     // =========================== THREAD ======================================= //
 
