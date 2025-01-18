@@ -106,7 +106,9 @@ public:
             throw std::runtime_error("Unable to open file");
         }
         file << fixed << std::setprecision(numeric_limits<double>::digits10 + 1);
-        file << number_particles << " " << total_time << " " << delta_time << "\n";
+        file << number_particles << "\n";
+
+        writeMasses(file);
         startTimer();
 
 
@@ -123,8 +125,6 @@ public:
             }
     }
 
-
-
         endTimer();
         file.close();
     };
@@ -136,8 +136,9 @@ public:
             throw std::runtime_error("Unable to open file");
         }
         file << fixed << std::setprecision(numeric_limits<double>::digits10 + 1);
-        file << number_particles << " " << total_time << " " << delta_time << "\n";
+        file << number_particles << "\n";
 
+        writeMasses(file);
         startTimer();
 
         for (current_time = 0.0; current_time < total_time; current_time += delta_time) {
@@ -155,6 +156,14 @@ public:
         endTimer();
         file.close();
     };
+
+    void writeMasses(std::ofstream& file) {
+        // writing masses in output file
+        for (int i = 0; i < number_particles -1 ; ++i) {
+            file << mass[i] << " ";
+        }
+        file << mass[number_particles - 1] << "\n";
+    }
 
     void startTimer() {
         start = std::chrono::high_resolution_clock::now();
@@ -175,10 +184,10 @@ public:
                 file << positions[i][j] << " ";
             }
             //writing velocity of particle i
-            for (int j = 0; j < dimension; ++j) {
+            for (int j = 0; j < dimension - 1; ++j) {
                 file << velocities[i][j] << " ";
             }
-            file << mass[i] << "\n";
+            file << velocities[i][dimension - 1] << "\n";
         }
     }
 
