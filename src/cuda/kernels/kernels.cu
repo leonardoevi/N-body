@@ -49,12 +49,12 @@ __global__ void sum_over_rows(const double* mat, double* arr, const unsigned int
     }
 }
 
-__global__ void apply_motion(double* pos, double* vel, const double* force, const unsigned int n_particles, const double dt) {
+__global__ void apply_motion(double* pos, double* vel, const double* acc, const unsigned int n_particles, const double dt) {
     const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (i < n_particles)
         for (int k = 0; k < DIM; k++) {
-            vel[n_particles * k + i] += force[n_particles * k + i] * dt;
+            vel[n_particles * k + i] += acc[n_particles * k + i] * dt;
             pos[n_particles * k + i] += vel[n_particles * k + i] * dt;
     }
 }

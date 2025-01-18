@@ -41,7 +41,7 @@ __global__ void sum_over_rows(const double* mat, double* arr, unsigned int matri
  */
 __global__ void apply_motion(   double* pos,
                                 double* vel,
-                                const double* force,
+                                const double* acc,
                                 unsigned int n_particles,
                                 double dt   );
 
