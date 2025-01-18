@@ -3,8 +3,12 @@
 #include "include/defines.h"
 #include "kernels/System.h"
 
+#include <chrono>
+
 int main() {
     std::cout << N_PARTICLES << " particles." << std::endl;
+
+    auto start = std::chrono::high_resolution_clock::now();
 
     auto pos = std::make_unique<double[]>(DIM * N_PARTICLES);
     fill_array(pos.get(), DIM * N_PARTICLES);
@@ -15,13 +19,14 @@ int main() {
     for (int i = 0; i < N_PARTICLES; i++)
         mass[i] = 1.0;
 
-    System system(N_PARTICLES, 20.0, 0.01, forwardEuler, (std::move(pos)), (std::move(vel)), (std::move(mass)));
+    System system(N_PARTICLES, 8.0, 0.01, forwardEuler, (std::move(pos)), (std::move(vel)), (std::move(mass)));
     if (system.initialize_device() != 0)
         return EXIT_FAILURE;
     system.simulate("../out/out.txt");
 
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << "Elapsed time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000l << " seconds" << std::endl;
 
-    //system.print_state();
 
     return EXIT_SUCCESS;
 }

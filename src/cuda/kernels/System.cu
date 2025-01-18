@@ -26,6 +26,7 @@ void* write_system_state(void* system) {
 
         // job is done, release the lock
         pthread_mutex_unlock(&system_obj->mutex);
+        pthread_cond_signal(&system_obj->cond);
     }
 }
 
@@ -33,7 +34,6 @@ int System::initialize_device() {
     int errors = 0;
 
     // allocate memory
-    std::cout << "Allocating device memory..." << std::endl;
     cudaMalloc(&this->d_pos, sizeof(double) * DIM * n_particles);   errors += checkCudaError("cudaMalloc d_pos");
     cudaMalloc(&this->d_vel, sizeof(double) * DIM * n_particles);   errors += checkCudaError("cudaMalloc d_vel");
 
@@ -48,7 +48,6 @@ int System::initialize_device() {
     if (errors != 0) return errors;
 
     // copy data to device
-    std::cout << "Moving initial data to device..." << std::endl;
     cudaMemcpy(this->d_pos, pos.get(), sizeof(double) * DIM * n_particles, cudaMemcpyHostToDevice); errors += checkCudaError("cudaMemcpy pos");
     cudaMemcpy(this->d_vel, vel.get(), sizeof(double) * DIM * n_particles, cudaMemcpyHostToDevice); errors += checkCudaError("cudaMemcpy vel");
 
@@ -92,25 +91,26 @@ void System::simulate(const std::string &out_file_name) {
     pthread_cond_signal(&cond);
     pthread_mutex_unlock(&mutex);
 
+    // compute dimensions for kernel launch
+    const int blocks_per_row = n_particles % BLOCK_SIZE == 0 ?
+                               n_particles / BLOCK_SIZE : n_particles / BLOCK_SIZE + 1;
+    const int n_blocks = blocks_per_row * (blocks_per_row + 1) / 2;
+
+    // calculate grid and block size for each kernel launch
+    const dim3 grid_dim_2D(n_blocks);
+    const dim3 block_dim_2D(BLOCK_SIZE, BLOCK_SIZE);
+
+    const int grid_dim_1D = n_particles % 1024 == 0 ? n_particles / 1024 : n_particles / 1024 + 1;
+    const int block_dim_1D = 1024;
+
+    int iter = 0;
     while (this->t_curr < this->t_max) {
-
-        // compute dimensions for kernel launch
-        const int blocks_per_row = n_particles % BLOCK_SIZE == 0 ?
-                                   n_particles / BLOCK_SIZE : n_particles / BLOCK_SIZE + 1;
-        const int n_blocks = blocks_per_row * (blocks_per_row + 1) / 2;
-
-        // calculate grid and block size for each kernel launch
-        dim3 grid_dim_2D(n_blocks);
-        dim3 block_dim_2D(BLOCK_SIZE, BLOCK_SIZE);
-
-        int grid_dim_1D = n_particles % 1024 == 0 ? n_particles / 1024 : n_particles / 1024 + 1;
-        int block_dim_1D = 1024;
 
         for (int i = 0; i < DIM; i++) {
             calculate_pairwise_force_component<<<grid_dim_2D, block_dim_2D, 0, streams[i]>>>
                 (d_pos, d_mass, i, d_force_matrix[i], n_particles, blocks_per_row);
 
-            sum_over_rows<<<grid_dim_1D, block_dim_1D, 0 ,streams[i]>>>
+            sum_over_rows<<<grid_dim_1D, block_dim_1D, 1024 * sizeof(double) ,streams[i]>>>
                 (d_force_matrix[i], (d_force_tot + i * n_particles), n_particles);
         }
 
@@ -128,12 +128,15 @@ void System::simulate(const std::string &out_file_name) {
             cudaMemcpy(vel.get(), d_vel, sizeof(double) * DIM * n_particles, cudaMemcpyDeviceToHost);
 
             this->t_curr += this->dt;
-        }
 
-        // release lock and signal consumer
-        print_system = true;
+            print_system = true;
+        }
         pthread_mutex_unlock(&mutex);
+        // signal consumer memory is ready to be output
         pthread_cond_signal(&cond);
+
+        iter ++;
+        if (iter % 100 == 0) std::cout << "Iteration " << iter << "/" << static_cast<int>(t_max / dt)<< std::endl;
     }
 }
 
@@ -147,7 +150,7 @@ void System::write_state() {
             outFile << pos[j + k * n_particles] << " ";
         for (int k = 0; k < DIM; k++)
             outFile << vel[j + k * n_particles] << " ";
-        outFile << std::endl;
+        outFile << "\n";
     }
 
 }

@@ -40,12 +40,30 @@ mapIndexTo2D(unsigned int index, const unsigned int n, unsigned int &i, unsigned
 }
 
 __global__ void sum_over_rows(const double* mat, double* arr, const unsigned int matrix_edge_size) {
-    unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+    // Shared memory for block-level reduction
+    extern __shared__ double shared_data[];
 
-    if (i < matrix_edge_size) {
-        arr[i] = 0;
-        for (unsigned int j = 0; j < matrix_edge_size; j++)
-            arr[i] += mat[i * matrix_edge_size + j];
+    unsigned int row = blockIdx.x;  // Each block processes one row
+    unsigned int col = threadIdx.x; // Thread within the row
+
+    unsigned int index = row * matrix_edge_size + col; // Global memory index
+
+    // Load matrix data into shared memory
+    shared_data[col] = (col < matrix_edge_size) ? mat[index] : 0.0;
+
+    __syncthreads(); // Ensure all threads finish loading data
+
+    // Perform parallel reduction
+    for (unsigned int stride = blockDim.x / 2; stride > 0; stride /= 2) {
+        if (col < stride && (col + stride) < matrix_edge_size) {
+            shared_data[col] += shared_data[col + stride];
+        }
+        __syncthreads(); // Ensure all threads complete their additions
+    }
+
+    // Write the result to the output array
+    if (col == 0) {
+        arr[row] = shared_data[0];
     }
 }
 
