@@ -58,3 +58,12 @@ __global__ void apply_motion(double* pos, double* vel, const double* acc, const 
             pos[n_particles * k + i] += vel[n_particles * k + i] * dt;
     }
 }
+
+__global__ void x_plus_by(const double* x, double* y, double b, double* res, unsigned int size) {
+    const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (i < size)
+        for (int k = 0; k < DIM; k++) {
+            res[i + size * k] = x[i + size * k] + b * y[i + size * k];
+        }
+}

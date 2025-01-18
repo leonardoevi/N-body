@@ -103,20 +103,33 @@ void System::simulate(const std::string &out_file_name) {
     const int grid_dim_1D = n_particles % 1024 == 0 ? n_particles / 1024 : n_particles / 1024 + 1;
     const int block_dim_1D = 1024;
 
+    // compute a_0
+    if (integration_type == leapFrog) {
+        device_compute_acceleration(grid_dim_2D, block_dim_2D, grid_dim_1D, block_dim_1D, blocks_per_row);
+        cudaDeviceSynchronize();
+    }
+
     int iter = 0;
     while (this->t_curr < this->t_max) {
 
-        for (int i = 0; i < DIM; i++) {
-            calculate_pairwise_acceleration_component<<<grid_dim_2D, block_dim_2D, 0, streams[i]>>>
-                (d_pos, d_mass, i, d_acc_matrix[i], n_particles, blocks_per_row);
+        if (integration_type == forwardEuler) {
+            device_compute_acceleration(grid_dim_2D, block_dim_2D, grid_dim_1D, block_dim_1D, blocks_per_row);
+            // using the blocking behaviour of the default stream, all the force components should be computed before
+            // this kernel is starting to be executed
+            apply_motion<<<grid_dim_1D, block_dim_1D>>>(d_pos, d_vel, d_acc_tot, n_particles, dt);
+        } else {
+            // v_(i + 0.5) = v_(i) + a_i * dt / 2
+            x_plus_by<<<grid_dim_1D, block_dim_1D>>>(d_vel, d_acc_tot, dt / 2.0, d_vel, n_particles);
 
-            sum_over_rows<<<grid_dim_1D, block_dim_1D, 0 ,streams[i]>>>
-                (d_acc_matrix[i], (d_acc_tot + i * n_particles), n_particles);
+            // x_(i + 1) = x_(i) + v_(i + 0.5) * dt
+            x_plus_by<<<grid_dim_1D, block_dim_1D>>>(d_pos, d_vel, dt, d_pos, n_particles);
+
+            // compute new acceleration vector a_(i+1)
+            device_compute_acceleration(grid_dim_2D, block_dim_2D, grid_dim_1D, block_dim_1D, blocks_per_row);
+
+            // v_(i + 1) = v_(i + 0.5) + a_(i + 0.5) * dt / 2
+            x_plus_by<<<grid_dim_1D, block_dim_1D>>>(d_vel, d_acc_tot, dt / 2.0, d_vel, n_particles);
         }
-
-        // using the blocking behaviour of the default stream, all the force components should be computed before
-        // this kernel is starting to be executed
-        apply_motion<<<grid_dim_1D, block_dim_1D>>>(d_pos, d_vel, d_acc_tot, n_particles, dt);
 
         cudaDeviceSynchronize();
 
@@ -137,6 +150,16 @@ void System::simulate(const std::string &out_file_name) {
 
         iter ++;
         if (iter % 100 == 0) std::cout << "Iteration " << iter << "/" << static_cast<int>(t_max / dt)<< std::endl;
+    }
+}
+
+void System::device_compute_acceleration(const dim3 grid_dim_2D,const dim3 block_dim_2D, const int grid_dim_1D, const int block_dim_1D, const int blocks_per_row) {
+    for (int i = 0; i < DIM; i++) {
+        calculate_pairwise_acceleration_component<<<grid_dim_2D, block_dim_2D, 0, streams[i]>>>
+            (d_pos, d_mass, i, d_acc_matrix[i], n_particles, blocks_per_row);
+
+        sum_over_rows<<<grid_dim_1D, block_dim_1D, 0 ,streams[i]>>>
+            (d_acc_matrix[i], (d_acc_tot + i * n_particles), n_particles);
     }
 }
 

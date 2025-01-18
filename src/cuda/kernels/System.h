@@ -104,6 +104,8 @@ private:
 
     void write_state();
 
+    void device_compute_acceleration(dim3 grid_dim_2D, dim3 block_dim_2D, int grid_dim_1D, int block_dim_1D, int blocks_per_row);
+
 };
 
 #endif //SYSTEM_H

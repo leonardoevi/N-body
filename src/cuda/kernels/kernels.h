@@ -45,4 +45,13 @@ __global__ void apply_motion(   double* pos,
                                 unsigned int n_particles,
                                 double dt   );
 
+/**
+ * Calculates res = x + y * b, element wise
+ * @param x DIM x size matrix
+ * @param y DIM x size matrix
+ * @param b multiply factor
+ * @param res DIM x size matrix
+ */
+__global__ void x_plus_by(const double* x, double* y, double b, double* res, unsigned int size);
+
 #endif //KERNELS_H
