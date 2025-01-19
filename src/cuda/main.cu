@@ -14,14 +14,13 @@ int main() {
 
     auto vel = std::make_unique<double[]>(DIM * N_PARTICLES);
 
-    fill_donut_3D(pos.get(), vel.get(), 0, 400, 0, 5, 1, 9, N_PARTICLES);
-    fill_donut_3D(pos.get(), vel.get(), 400, N_PARTICLES, 0, 2, 0.5, -7, N_PARTICLES);
+    fill_spiral_3D(pos.get(), vel.get(), 0, N_PARTICLES, 0, 2, 10, 0.5, -10, N_PARTICLES);
 
     auto mass = std::make_unique<double[]>(N_PARTICLES);
     for (int i = 0; i < N_PARTICLES; i++)
         mass[i] = random_r();
 
-    System system(N_PARTICLES, 2.0, 0.0005, leapFrog, (std::move(pos)), (std::move(vel)), (std::move(mass)));
+    System system(N_PARTICLES, 2, 0.001, leapFrog, (std::move(pos)), (std::move(vel)), (std::move(mass)));
     if (system.initialize_device() != 0)
         return EXIT_FAILURE;
     system.simulate("../out/out.txt");

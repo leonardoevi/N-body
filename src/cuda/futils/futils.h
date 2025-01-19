@@ -21,6 +21,8 @@ double check_array_force_component(const double* array, const double* pos, const
 
 void fill_donut_3D(double* pos, double* vel, int start, int end, int axis, double r_in, double r_d, double v, unsigned int n_part);
 
+void fill_spiral_3D(double* pos, double* vel, int start, int end, int axis, int n_arms, double r_in, double r_d, double v, unsigned int n_part);
+
 inline double random_r() {
     return static_cast<double>(std::rand()) / RAND_MAX;
 }

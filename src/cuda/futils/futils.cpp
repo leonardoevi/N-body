@@ -94,4 +94,37 @@ void fill_donut_3D(double* pos, double* vel,
     }
 }
 
+void fill_spiral_3D(double* pos, double* vel,
+                    const int start, const int end,
+                    const int axis, const int n_arms,
+                    const double r_in, const double r_d,
+                    const double v, const unsigned int n_part) {
+
+    for (unsigned int i = start; i < end && i < n_part; ++i) {
+        const double theta = 2 * M_PI * i / static_cast<double>(n_part) + (2 * M_PI / n_arms) * (i % n_arms);
+
+        const double phi = random_r() * 2 * M_PI;
+        const double psi = random_r() * 2 * M_PI;
+        const double dx = r_d * std::sin(phi) * std::cos(psi);
+        const double dy = r_d * std::sin(phi) * std::sin(psi);
+        const double dz = r_d * std::cos(phi);
+
+        const double rho = r_in * i / static_cast<double>(n_part);
+
+        const double x = rho * std::cos(theta);
+        const double y = rho * std::sin(theta);
+
+        const double vx = - std::sin(theta) * v * std::sqrt(rho / 2);
+        const double vy = std::cos(theta) * v * std::sqrt(rho / 2);
+
+        pos[i + n_part * ((axis + 0) % 3)] = x  + dx ;
+        pos[i + n_part * ((axis + 1) % 3)] = y  + dy ;
+        pos[i + n_part * ((axis + 2) % 3)] = dz;
+
+        vel[i + n_part * ((axis + 0) % 3)] = vx;
+        vel[i + n_part * ((axis + 1) % 3)] = vy;
+
+    }
+}
+
 
