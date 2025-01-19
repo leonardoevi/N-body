@@ -19,4 +19,11 @@ void printArray(const std::string& name, const double* arr, int size);
 
 double check_array_force_component(const double* array, const double* pos, const unsigned int component, const unsigned int size);
 
+void fill_donut_3D(double* pos, double* vel, int start, int end, int axis, double r_in, double r_d, double v, unsigned int n_part);
+
+inline double random_r() {
+    return static_cast<double>(std::rand()) / RAND_MAX;
+}
+
+
 #endif //FUTILS_H

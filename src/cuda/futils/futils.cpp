@@ -63,4 +63,35 @@ void printArray(const std::string& name, const double* arr, const int size) {
     std::cout << std::endl << std::endl;
 }
 
+void fill_donut_3D(double* pos, double* vel,
+                    const int start, const int end,
+                    const int axis,
+                    const double r_in, const double r_d,
+                    const double v, const unsigned int n_part) {
+
+    for (unsigned int i = start; i < end && i < n_part; ++i) {
+        const double theta = random_r() * 2 * M_PI;
+        const double phi = random_r() * 2 * M_PI;
+        const double psi = random_r() * 2 * M_PI;
+
+        const double dx = r_d * std::sin(phi) * std::cos(psi);
+        const double dy = r_d * std::sin(phi) * std::sin(psi);
+        const double dz = r_d * std::cos(phi);
+
+        const double x = r_in * std::cos(theta);
+        const double y = r_in * std::sin(theta);
+
+        const double vx = - std::sin(theta) * v;
+        const double vy = std::cos(theta) * v;
+
+        pos[i + n_part * ((axis + 0) % 3)] = x + dx;
+        pos[i + n_part * ((axis + 1) % 3)] = y + dy;
+        pos[i + n_part * ((axis + 2) % 3)] = dz;
+
+        vel[i + n_part * ((axis + 0) % 3)] = vx;
+        vel[i + n_part * ((axis + 1) % 3)] = vy;
+
+    }
+}
+
 
