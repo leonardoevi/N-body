@@ -49,7 +49,8 @@ int main() {
     }
 
     long double current_time;
-    while (file >> current_time ) {
+    bool continue_rendering = true;
+    while (file >> current_time && continue_rendering) {
 
         while (Rendering::isPaused) {
             rendering.show(positions, velocities, masses);
@@ -63,7 +64,7 @@ int main() {
                 file >> velocities[i][k];
             }
         }
-        rendering.show(positions, velocities, masses);
+        continue_rendering = rendering.show(positions, velocities, masses);
     }
 
 }
