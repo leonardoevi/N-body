@@ -14,7 +14,7 @@ int main() {
 
     auto vel = std::make_unique<double[]>(DIM * N_PARTICLES);
 
-    fill_spiral_3D(pos.get(), vel.get(), 0, N_PARTICLES, 0, 2, 10, 0.5, -10, N_PARTICLES);
+    fill_spiral_3D(pos.get(), vel.get(), 0, N_PARTICLES, 0, 4, 0.75, 10, 0.15, -6, N_PARTICLES);
 
     auto mass = std::make_unique<double[]>(N_PARTICLES);
     for (int i = 0; i < N_PARTICLES; i++)

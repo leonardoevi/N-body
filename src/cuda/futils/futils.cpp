@@ -96,20 +96,20 @@ void fill_donut_3D(double* pos, double* vel,
 
 void fill_spiral_3D(double* pos, double* vel,
                     const int start, const int end,
-                    const int axis, const int n_arms,
+                    const int axis, const int n_arms, double n_rounds,
                     const double r_in, const double r_d,
                     const double v, const unsigned int n_part) {
 
     for (unsigned int i = start; i < end && i < n_part; ++i) {
-        const double theta = 2 * M_PI * i / static_cast<double>(n_part) + (2 * M_PI / n_arms) * (i % n_arms);
+        const double theta = 2 * M_PI * i / static_cast<double>(n_part) * n_rounds + (2 * M_PI / n_arms) * (i % n_arms);
 
-        const double phi = random_r() * 2 * M_PI;
+        const double d_rho = my_dist(r_d * 0.5);
         const double psi = random_r() * 2 * M_PI;
-        const double dx = r_d * std::sin(phi) * std::cos(psi);
-        const double dy = r_d * std::sin(phi) * std::sin(psi);
-        const double dz = r_d * std::cos(phi);
+        const double dx = d_rho * std::cos(psi);
+        const double dy = d_rho * std::sin(psi);
+        const double dz = (random_r() > 0.5 ? 1.0 : -1.0) / (10.0 * d_rho + 1);
 
-        const double rho = r_in * i / static_cast<double>(n_part);
+        const double rho = r_in * (i + n_part / 25) / static_cast<double>(n_part);
 
         const double x = rho * std::cos(theta);
         const double y = rho * std::sin(theta);
@@ -117,9 +117,9 @@ void fill_spiral_3D(double* pos, double* vel,
         const double vx = - std::sin(theta) * v * std::sqrt(rho / 2);
         const double vy = std::cos(theta) * v * std::sqrt(rho / 2);
 
-        pos[i + n_part * ((axis + 0) % 3)] = x  + dx ;
-        pos[i + n_part * ((axis + 1) % 3)] = y  + dy ;
-        pos[i + n_part * ((axis + 2) % 3)] = dz;
+        pos[i + n_part * ((axis + 0) % 3)] = x  + dx * 1;
+        pos[i + n_part * ((axis + 1) % 3)] = y  + dy * 1;
+        pos[i + n_part * ((axis + 2) % 3)] = dz * 1;
 
         vel[i + n_part * ((axis + 0) % 3)] = vx;
         vel[i + n_part * ((axis + 1) % 3)] = vy;
