@@ -64,6 +64,8 @@ class Rendering {
           glfwSetScrollCallback(window, scroll_callback);
           glfwSetKeyCallback(window, key_callback);
 
+          glfwSetWindowCloseCallback(window, window_close_callback);
+
         }
 
   static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -89,7 +91,7 @@ class Rendering {
 
           // Calculate the new camera position using spherical coordinates
           cameraPosX = radius * cos(pitchRad) * cos(yawRad);
-          cameraPosY = radius * sin(pitchRad);
+          cameraPosY = -radius * sin(pitchRad);
           cameraPosZ = radius * cos(pitchRad) * sin(yawRad);
 
         }
@@ -222,6 +224,11 @@ class Rendering {
             glEnd();
           }
         }
+
+  static void window_close_callback(GLFWwindow* window) {
+    // terminate the program
+    std::exit(0);
+  }
 };
 
 // Initialize static variables
