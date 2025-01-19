@@ -64,6 +64,8 @@ class Rendering {
           glfwSetScrollCallback(window, scroll_callback);
           glfwSetKeyCallback(window, key_callback);
 
+          glfwSetWindowCloseCallback(window, window_close_callback);
+
         }
 
   static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -135,7 +137,7 @@ class Rendering {
         }
 
 
-  bool show (const vector<Vector<DIM>>& positions, const vector<Vector<DIM>>& velocities, vector<double>& masses) {
+  void show (const vector<Vector<DIM>>& positions, const vector<Vector<DIM>>& velocities, vector<double>& masses) {
           if (!glfwWindowShouldClose(window)) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glMatrixMode(GL_MODELVIEW);
@@ -155,12 +157,10 @@ class Rendering {
             glfwSwapBuffers(window);
             //Checks if any events(keyboard inputs or mouse movement) are triggered and calls their callback functions
             glfwPollEvents();
-            return true;
           }
           else {
             glfwDestroyWindow(window);
             glfwTerminate();
-            return false;
           }
         }
 
@@ -224,6 +224,11 @@ class Rendering {
             glEnd();
           }
         }
+
+  static void window_close_callback(GLFWwindow* window) {
+    // terminate the program
+    std::exit(0);
+  }
 };
 
 // Initialize static variables
@@ -237,7 +242,7 @@ float Rendering::lastX = 400.0f;
 float Rendering::lastY = 300.0f;
 bool Rendering::firstMouse = true;
 bool Rendering::isDragging = false;
-bool Rendering::isPaused = true;
+bool Rendering::isPaused = false;
 
 
 #endif //RENDERING_H
