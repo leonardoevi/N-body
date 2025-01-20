@@ -1,7 +1,8 @@
 #include <iostream>
 
 #include "include/defines.h"
-#include "system/System.h"
+#include "system/SystemFE.cu"
+#include "system/SystemLF.cu"
 
 #include <chrono>
 
@@ -20,7 +21,7 @@ int main() {
     for (int i = 0; i < N_PARTICLES; i++)
         mass[i] = 1.0;
 
-    System system(N_PARTICLES, 1, 0.001, leapFrog, (std::move(pos)), (std::move(vel)), (std::move(mass)));
+    SystemFE system(N_PARTICLES, 1, 0.001, (std::move(pos)), (std::move(vel)), (std::move(mass)));
     if (system.initialize_device() != 0)
         return EXIT_FAILURE;
     system.simulate("../out/out.txt");
