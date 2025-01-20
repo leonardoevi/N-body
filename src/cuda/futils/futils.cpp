@@ -117,9 +117,9 @@ void fill_spiral_3D(double* pos, double* vel,
         const double vx = - std::sin(theta) * v * std::sqrt(rho / 2);
         const double vy = std::cos(theta) * v * std::sqrt(rho / 2);
 
-        pos[i + n_part * ((axis + 0) % 3)] = x  + dx * 0;
-        pos[i + n_part * ((axis + 1) % 3)] = y  + dy * 0;
-        pos[i + n_part * ((axis + 2) % 3)] = dz * 0;
+        pos[i + n_part * ((axis + 0) % 3)] = x  + dx * 1;
+        pos[i + n_part * ((axis + 1) % 3)] = y  + dy * 1;
+        pos[i + n_part * ((axis + 2) % 3)] = dz * 1;
 
         vel[i + n_part * ((axis + 0) % 3)] = vx;
         vel[i + n_part * ((axis + 1) % 3)] = vy;

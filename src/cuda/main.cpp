@@ -16,7 +16,7 @@ int main() {
 
     auto vel = std::make_unique<double[]>(DIM * N_PARTICLES);
 
-    fill_spiral_3D(pos.get(), vel.get(), 0, N_PARTICLES, 0, 3, 0.75, 4, 0.15, -4, N_PARTICLES);
+    fill_spiral_3D(pos.get(), vel.get(), 0, N_PARTICLES, 0, 3, 0.75, 4, 0.15, -20, N_PARTICLES);
 
     auto mass = std::make_unique<double[]>(N_PARTICLES);
     for (int i = 0; i < N_PARTICLES; i++)
@@ -25,7 +25,7 @@ int main() {
     System* system;
 
     {
-        integration_type int_t = forwardEuler;
+        integration_type int_t = leapFrog;
         if (int_t == forwardEuler)
             system = new SystemFE(N_PARTICLES, 1, 0.001, (std::move(pos)), (std::move(vel)), (std::move(mass)));
         else
