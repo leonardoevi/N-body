@@ -3,7 +3,6 @@
 
 #include <memory>
 #include "../include/defines.h"
-#include "../include/integration_type.h"
 #include <cuda_runtime.h>
 #include <iostream>
 #include "../futils/futils.h"
@@ -91,7 +90,7 @@ public:
     /**
      * Simulates the system of particles, write the output file with the specified name.
      */
-    void simulate(const std::string &out_file_name);
+    virtual void simulate(const std::string &out_file_name) = 0;
 
     void print_state() const;
 
