@@ -57,3 +57,56 @@ __global__ void x_plus_by(const double* x, double* y, double b, double* res, uns
             res[i + size * k] = x[i + size * k] + b * y[i + size * k];
         }
 }
+
+__global__ void reduceSum_rows_parallel(double *input, int size, int A) {
+    extern __shared__ double sharedData[];
+
+    const unsigned int t_idx = threadIdx.x;
+    const unsigned int j = blockIdx.y * blockDim.x * 2 + threadIdx.x;
+
+    for (unsigned int k = 0; k < A; k++) {
+        const unsigned int i = blockIdx.x * A + k;
+
+        if (i >= size)
+            return;
+
+        sharedData[t_idx] = 0.0;
+        sharedData[t_idx + blockDim.x] = 0.0;
+        if (j < size)
+            sharedData[t_idx] = input[i * size + j];
+        if (j + blockDim.x < size)
+            sharedData[t_idx + blockDim.x] = input[i * size + j + blockDim.x];
+
+        __syncthreads();
+
+        for (unsigned int stride = blockDim.x; stride > 0; stride >>= 1) {
+            if (t_idx < stride) {
+                sharedData[t_idx] += sharedData[t_idx + stride];
+            }
+            __syncthreads();
+        }
+
+        if (threadIdx.x == 0)
+            input[i * size + j] = sharedData[0];
+
+    }
+}
+
+__global__ void sumRowsInterleaved(double *input, double *out, int size, int step) {
+    const unsigned int row = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < size) {
+        double sum = 0.0;
+        for (unsigned int j = 0; j < size; j += step)
+            sum += input[row * size + j];
+
+        out[row] = sum;
+    }
+}
+
+__global__ void setZeroDiag(double *input, const int size) {
+    const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (i < size)
+        input[i * size + i] = 0.0;
+}

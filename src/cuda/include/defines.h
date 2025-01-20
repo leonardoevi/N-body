@@ -7,7 +7,8 @@
 
 // REPLACEABLE BY VARIABLES
 
-#define N_PARTICLES 2500  // current max is circa 22.000
+#define N_PARTICLES 5000  // current max is circa 22.000
 #define BLOCK_SIZE 32       // blocks will be 2D: BLOCK_SIZE*BLOCK_SIZE
+#define BETTER_REDUCTION true
 
 #endif //DEFINES_H

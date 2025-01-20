@@ -43,4 +43,10 @@ __global__ void sum_over_rows(const double* mat, double* arr, unsigned int matri
  */
 __global__ void x_plus_by(const double* x, double* y, double b, double* res, unsigned int size);
 
+__global__ void reduceSum_rows_parallel(double *input, int size, int A);
+
+__global__ void sumRowsInterleaved(double *input, double *out, int size, int step);
+
+__global__ void setZeroDiag(double *input, int size);
+
 #endif //KERNELS_H
