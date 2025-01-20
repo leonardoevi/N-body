@@ -3,7 +3,6 @@
 
 #include <memory>
 #include "../include/defines.h"
-#include "../include/integration_type.h"
 #include <cuda_runtime.h>
 #include <iostream>
 #include "../futils/futils.h"
@@ -14,14 +13,14 @@
 
 class System {
 
+protected:
+
     // number of particles in the system
     const unsigned int n_particles;
 
     // maximum time of simulation, timestep, current time of simulation
     const double t_max, dt;
     double t_curr;
-
-    const enum integration_type integration_type;
 
     // array of CUDA streams, DIM in total, used to compute force components in parallel
     cudaStream_t streams[DIM];
@@ -65,21 +64,18 @@ public:
      * @param n_particles_ number of particles in the system
      * @param t_max_ maximum simulation time
      * @param dt_ time step
-     * @param integration_ type of integration to be used
      * @param pos_ position matrix
      * @param vel_ velocity matrix
      * @param mass_ mass vector
      */
     System(const unsigned int n_particles_, const double t_max_, const double dt_,
-                    const enum integration_type integration_,
-                    std::unique_ptr<double[]> pos_,
-                    std::unique_ptr<double[]> vel_,
-                    std::unique_ptr<double[]> mass_)
+           std::unique_ptr<double[]> pos_,
+           std::unique_ptr<double[]> vel_,
+           std::unique_ptr<double[]> mass_)
         : n_particles(n_particles_),
           t_max(t_max_),
           dt(dt_),
           t_curr(0.0),
-          integration_type(integration_),
           pos(std::move(pos_)),
           vel(std::move(vel_)),
           mass(std::move(mass_)) {}
@@ -94,13 +90,13 @@ public:
     /**
      * Simulates the system of particles, write the output file with the specified name.
      */
-    void simulate(const std::string &out_file_name);
+    virtual void simulate(const std::string &out_file_name) = 0;
 
     void print_state() const;
 
     friend void* write_system_state(void* system);
 
-private:
+protected:
 
     void write_state();
 

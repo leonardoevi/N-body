@@ -242,7 +242,7 @@ float Rendering::lastX = 400.0f;
 float Rendering::lastY = 300.0f;
 bool Rendering::firstMouse = true;
 bool Rendering::isDragging = false;
-bool Rendering::isPaused = false;
+bool Rendering::isPaused = true;
 
 
 #endif //RENDERING_H
