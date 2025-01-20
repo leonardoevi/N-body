@@ -35,17 +35,6 @@ __global__ void calculate_pairwise_acceleration_component( const double* pos,
 __global__ void sum_over_rows(const double* mat, double* arr, unsigned int matrix_edge_size);
 
 /**
- * Update positions and velocities according to the force applied to each particle.
- * All three matrices must be DIM * n_particles, and contain on each row the components parallel to one axis.
- * Execute with a 1D grid of 1D blocks. (Might be faster serially)
- */
-__global__ void apply_motion(   double* pos,
-                                double* vel,
-                                const double* acc,
-                                unsigned int n_particles,
-                                double dt   );
-
-/**
  * Calculates res = x + y * b, element wise
  * @param x DIM x size matrix
  * @param y DIM x size matrix
