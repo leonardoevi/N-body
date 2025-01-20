@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "include/defines.h"
-#include "kernels/System.h"
+#include "system/System.h"
 
 #include <chrono>
 
@@ -14,13 +14,13 @@ int main() {
 
     auto vel = std::make_unique<double[]>(DIM * N_PARTICLES);
 
-    fill_spiral_3D(pos.get(), vel.get(), 0, N_PARTICLES, 0, 4, 0.75, 10, 0.15, -6, N_PARTICLES);
+    fill_spiral_3D(pos.get(), vel.get(), 0, N_PARTICLES, 0, 3, 0.75, 4, 0.15, -4, N_PARTICLES);
 
     auto mass = std::make_unique<double[]>(N_PARTICLES);
     for (int i = 0; i < N_PARTICLES; i++)
-        mass[i] = random_r();
+        mass[i] = 1.0;
 
-    System system(N_PARTICLES, 2, 0.001, leapFrog, (std::move(pos)), (std::move(vel)), (std::move(mass)));
+    System system(N_PARTICLES, 1, 0.001, leapFrog, (std::move(pos)), (std::move(vel)), (std::move(mass)));
     if (system.initialize_device() != 0)
         return EXIT_FAILURE;
     system.simulate("../out/out.txt");
