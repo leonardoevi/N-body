@@ -21,40 +21,6 @@ __global__ void calculate_pairwise_acceleration_component(const double* pos, con
     }
 }
 
-__global__ void calculate_pairwise_acceleration_component_opt(const double* pos, const double* mass, const unsigned int component, double* matrix, const unsigned int n_particles, const unsigned int blocks_per_row) {
-    unsigned int i, j; mapIndexTo2D(blockIdx.x, blocks_per_row, i, j);
-    i = i * blockDim.x + threadIdx.x;
-    j = j * blockDim.y + threadIdx.y;
-
-    const unsigned int shared_len = blockDim.x;
-    extern __shared__ double shared_pos[];
-
-    if (threadIdx.x < DIM)
-        if (j < n_particles)
-            shared_pos[threadIdx.x * shared_len + threadIdx.y] = pos[threadIdx.x * n_particles + j];
-        else
-            shared_pos[threadIdx.x * shared_len + threadIdx.y] = 0;
-
-    __syncthreads();
-
-
-    if (i < n_particles && j < n_particles && i <= j) {
-        double d = 0;
-        double di[DIM];
-
-        for (unsigned int k = 0; k < DIM; ++k) {
-            const double tmp = shared_pos[k * shared_len + threadIdx.y] - pos[k * n_particles + i];
-            di[k] = tmp;
-            d += tmp * tmp;
-        }
-        d = std::sqrt(d);
-        d = d * d * d;
-
-        matrix[i * n_particles + j] = G * di[component] / (d > D_MIN ? d : D_MIN) * mass[j];
-        matrix[j * n_particles + i] = -matrix[i * n_particles + j];
-    }
-}
-
 __host__ __device__ void
 mapIndexTo2D(unsigned int index, const unsigned int n, unsigned int &i, unsigned int &j) {
     // Find row and column

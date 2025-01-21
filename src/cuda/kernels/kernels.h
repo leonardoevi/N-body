@@ -31,12 +31,6 @@ __global__ void calculate_pairwise_acceleration_component( const double* pos,
                                                     double* matrix,
                                                     unsigned int n_particles,
                                                     unsigned int blocks_per_row );
-__global__ void calculate_pairwise_acceleration_component_opt( const double* pos,
-                                                    const double* mass,
-                                                    unsigned int component,
-                                                    double* matrix,
-                                                    unsigned int n_particles,
-                                                    unsigned int blocks_per_row );
 
 __global__ void sum_over_rows(const double* mat, double* arr, unsigned int matrix_edge_size);
 
