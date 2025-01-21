@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "../../src/openmp/Solver/Solver.h"
-#include "../../src/openmp/Solver/ForwardEulerSolver.cpp"
-#include "../../src/openmp/Solver/LeapFrogSolver.cpp"
+#include "../../src/openmp/Solver/ForwardEulerSolver.h"
+#include "../../src/openmp/Solver/LeapFrogSolver.h"
 
 using namespace std;
 

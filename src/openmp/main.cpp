@@ -3,10 +3,14 @@
 #include <random>
 
 #include "Solver/Solver.h"
-#include "Solver/ForwardEulerSolver.cpp"
-#include "Solver/LeapFrogSolver.cpp"
+#include "Solver/ForwardEulerSolver.h"
+#include "Solver/LeapFrogSolver.h"
 #include "../../include/define.h"
 
+/**
+ * Generates a random vector
+ * @return a Vector of dimension DIM
+ */
 Vector<DIM> generateRandomVector() {
     random_device rd;
     mt19937 gen(rd());
@@ -20,6 +24,11 @@ Vector<DIM> generateRandomVector() {
     return randomVector;
 }
 
+/**
+ * Generates a random vector in the sphere of radius rho
+ * @param rho radius of the sphere
+ * @return a Vector of dimension DIM
+ */
 Vector<DIM> generateRandomPointOnUnitSphere(const double rho) {
     random_device rd;
     mt19937 gen(rd());
@@ -40,6 +49,14 @@ Vector<DIM> generateRandomPointOnUnitSphere(const double rho) {
     return randomPoint;
 }
 
+/**
+ * Initializes the positions and velocities of the system in a vortex effect with a number of layers
+ * @param positions array of positions to initialize
+ * @param velocities array of velocities to initialize
+ * @param numParticles number of particles
+ * @param radius radius of the bigger circle
+ * @param layers number of layers wanted
+ */
 void initializeParticles(vector<Vector<DIM>>& positions, vector<Vector<DIM>>& velocities, int numParticles, double radius, int layers) {
     const double gravitationalConstant = 9.81;
 
@@ -115,8 +132,8 @@ int main() {
     std::unique_ptr<Solver<NUM_PARTICLES, DIM>> leapFrogSolver = std::make_unique<LeapFrogSolver<NUM_PARTICLES, DIM>>(total_time, delta, masses, positions, velocities);
     std::cout << "Initial Energy "<< forwardEulerSolver->compute_energy() << endl;
 
-    forwardEulerSolver->simulate("output_interface_forward_euler.txt");
-    leapFrogSolver->simulate("output_interface_leapfrog.txt");
+    forwardEulerSolver->simulate("output_forward_euler.txt");
+    leapFrogSolver->simulate("output_leapfrog.txt");
 
     std::cout << "Final Forward Euler Solver Energy " << forwardEulerSolver->compute_energy() << endl;
     std::cout << "Final LeapFrog Solver Energy " << leapFrogSolver->compute_energy() << endl;

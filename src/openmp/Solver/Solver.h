@@ -3,25 +3,41 @@
 
 #include <iostream>
 #include <fstream>
-#include "../Vector.hpp"
+#include "../Vector.h"
 
+/**
+ * Class Solver initializes the solver with the needed attributes
+ * @tparam number_particles total number of particles of the system
+ * @tparam dimension dimension of each vector of the system (either 2 or 3)
+ */
 template <unsigned int number_particles, unsigned int dimension> class Solver {
   protected:
+    // Attributes needed for profiling
     chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
     chrono::high_resolution_clock::time_point end = chrono::high_resolution_clock::now();
 
+    // Gravitational constant
     constexpr static double G = 10.0;
     double total_time, delta_time, current_time;
 
     vector<double> mass;
     vector<Vector<dimension>> positions, velocities;
+    // Matrix of accelerations; accelerations[i][j] is the acceleration of particle i due to particle j, obviously is a upper triangular matrix
     vector<vector<Vector<dimension>>> accelerations;
 
   public:
+    /**
+     * Constructor of Solver class
+     * @param total_time amount of time to run the simulation
+     * @param delta_time time step of each iteration of the simulation
+     * @param mass array of particles' masses
+     * @param initial_positions array of particles' initial positions
+     * @param initial_velocities array of particles' initial velocities
+     */
     Solver (double total_time, double delta_time,
-             const vector<double>& mass,
-             const vector<Vector<dimension>>& initial_positions,
-             const vector<Vector<dimension>>& initial_velocities)
+            const vector<double>& mass,
+            const vector<Vector<dimension>>& initial_positions,
+            const vector<Vector<dimension>>& initial_velocities)
           :
             total_time(total_time),
             delta_time(delta_time),
@@ -33,25 +49,52 @@ template <unsigned int number_particles, unsigned int dimension> class Solver {
             accelerations.resize(number_particles, vector<Vector<dimension>>(number_particles));
             }
 
-
-            [[nodiscard]] vector<double> get_mass() const  {
+    /**
+     * Getter function
+     * @return array of particles' masses
+     */
+    [[nodiscard]] vector<double> get_mass() const  {
                 return mass;
             }
-        [[nodiscard]] vector<Vector<dimension>> get_positions() const {
+
+    /**
+     * Getter function
+     * @return array of particles' positions
+     */
+    [[nodiscard]] vector<Vector<dimension>> get_positions() const {
                 return positions;
             }
-        [[nodiscard]] vector<Vector<dimension>> get_velocities() const{
+
+    /**
+     * Getter function
+     * @return array of particles' positions
+     */
+    [[nodiscard]] vector<Vector<dimension>> get_velocities() const{
                 return velocities;
             }
-        [[nodiscard]] vector<vector<Vector<dimension>>> get_accelerations() const{
+
+    /**
+     * Getter function
+     * @return matrix of accelerations
+     */
+    [[nodiscard]] vector<vector<Vector<dimension>>> get_accelerations() const{
                 return accelerations;
             }
 
-        static double max(const double a, const double b) {
+    /**
+     * Function that return maximum
+     * @param a first parameter
+     * @param b second parameter
+     * @return maximum between a or b
+     */
+    static double max(const double a, const double b) {
                 return a > b ? a : b;
             }
 
-            void computeMatrix(){
+    /**
+     * Called at each time step, computes the matrix of accelarations
+     */
+    void computeMatrix(){
             #pragma omp for
             for (int i = 0; i < number_particles; ++i) {
                 for (int j = i + 1; j < number_particles; ++j) {
@@ -63,7 +106,11 @@ template <unsigned int number_particles, unsigned int dimension> class Solver {
             }
           }
 
-          void simulate(const string& output_file_name){
+    /**
+     * Solves each time step of the system and writes positions and velocities in output file
+     * @param output_file_name Name of the output file to write positions and velocities
+     */
+    void simulate(const string& output_file_name){
             //Generate output file
             ofstream file(output_file_name, ios::out);
             if (!file.is_open()) {
@@ -91,7 +138,11 @@ template <unsigned int number_particles, unsigned int dimension> class Solver {
         }
 
 
-        void writeMasses(std::ofstream& file) {
+    /**
+     * Writes masses in poutput file
+     * @param file file already opened to write masses on
+     */
+    void writeMasses(std::ofstream& file) {
                 // writing masses in output file
                 for (int i = 0; i < number_particles -1 ; ++i) {
                     file << mass[i] << " ";
@@ -99,17 +150,27 @@ template <unsigned int number_particles, unsigned int dimension> class Solver {
                 file << mass[number_particles - 1] << "\n";
             }
 
-        void startTimer() {
+    /**
+     * Starts the timer before the while loop of the solver starts in order to  profile
+     */
+    void startTimer() {
                 start = std::chrono::high_resolution_clock::now();
             }
-        void endTimer() {
+    /**
+     * Ends the timer after the while loop of the solver ends in order to profile
+     */
+    void endTimer() {
                 end = std::chrono::high_resolution_clock::now();
                 chrono::duration<double> elapsed = end - start;
-                cout << "LeapFrog Integration Parallelized took " << elapsed.count() << " seconds to complete.\n";
+                cout << "Integration Parallelized took " << elapsed.count() << " seconds to complete.\n";
 
             }
 
-            void write_status_to_file(std::ofstream& file) const {
+    /**
+     * Writes the current positions and velocities at time step current_time
+     * @param file file already opened to write status on
+     */
+    void write_status_to_file(std::ofstream& file) const {
 
                 file << current_time << "\n";
                 for (int i = 0; i < number_particles; ++i) {
@@ -125,15 +186,11 @@ template <unsigned int number_particles, unsigned int dimension> class Solver {
                 }
             }
 
-        void write_energy_to_file(std::ofstream& file) const {
-                if (!file.is_open()) {
-                    throw std::runtime_error("File stream is not open");
-                }
-                file << current_time << " " << compute_energy() << endl;
-
-            }
-
-        [[nodiscard]] long double compute_energy() const {
+    /**
+     * Computes the total energy of the system. Needed to compare between Leapfrog Integration and Forward Euler Integration
+     * @return the sum of kinetic and potential energy
+     */
+    [[nodiscard]] long double compute_energy() const {
                 long double kinetic_energy = 0.0;
                 for (int i = 0; i < number_particles; ++i) {
                     kinetic_energy += 0.5 * mass[i]  * velocities[i].norm() * velocities[i].norm();
@@ -149,11 +206,15 @@ template <unsigned int number_particles, unsigned int dimension> class Solver {
                 return kinetic_energy + potential_energy;
             }
 
-        virtual void applyMotion() = 0;
+    /**
+     * Computes the next position and velocity of each particle. Will be overridden by the 2 child classes
+     */
+    virtual void applyMotion() = 0;
 
-        virtual ~Solver() = default;
+    /**
+     * Destructor
+     */
+    virtual ~Solver() = default;
 };
-
-
 
 #endif //SOLVER_H
