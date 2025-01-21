@@ -10,6 +10,6 @@
 #define N_PARTICLES 5000  // current max is circa 22.000
 #define BLOCK_SIZE 32       // blocks will be 2D: BLOCK_SIZE*BLOCK_SIZE
 #define BETTER_REDUCTION true
-#define BETTER_MATRIX_CALC true
+#define BETTER_MATRIX_CALC false
 
 #endif //DEFINES_H

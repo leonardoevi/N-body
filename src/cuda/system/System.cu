@@ -34,10 +34,6 @@ int System::initialize_device() {
 
 void System::device_compute_acceleration(const dim3 grid_dim_2D,const dim3 block_dim_2D, const int grid_dim_1D, const int block_dim_1D, const int blocks_per_row) {
     for (int i = 0; i < DIM; i++) {
-        // needed only in case we use the reduceSum_rows_parallel kernel (it modifies the acceleration matrix to compute partial sums)
-        if constexpr (BETTER_REDUCTION)
-            setZeroDiag<<<grid_dim_1D, block_dim_1D, 0 ,streams[i]>>>(d_acc_matrix[i], n_particles);
-
         if constexpr (BETTER_MATRIX_CALC) {
             calculate_pairwise_acceleration_component_opt<<<grid_dim_2D, block_dim_2D, DIM * block_dim_2D.x * sizeof(double), streams[i]>>>(d_pos, d_mass, i, d_acc_matrix[i], n_particles, blocks_per_row);
         } else
@@ -103,7 +99,7 @@ System::~System() {
     pthread_mutex_unlock(&mutex);
     pthread_cond_signal(&cond);
 
-    std::cout << "Waiting for threads to finish..." << std::endl;
+    std::cout << "Waiting for threads to finish" << std::endl;
 
     // wait for slave thead to terminate
     pthread_join(system_printer, nullptr);

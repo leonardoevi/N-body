@@ -5,24 +5,20 @@ __global__ void calculate_pairwise_acceleration_component(const double* pos, con
     i = i * blockDim.x + threadIdx.x;
     j = j * blockDim.y + threadIdx.y;
 
-    if (i < n_particles && j < n_particles && i < j)
-        if (j > i) {
-            double di[DIM];
-            for (unsigned int k = 0; k < DIM; ++k)
-                di[k] = pos[k * n_particles + j] - pos[k * n_particles + i];
+    if (i < n_particles && j < n_particles && i <= j){
+        double di[DIM];
+        for (unsigned int k = 0; k < DIM; ++k)
+            di[k] = pos[k * n_particles + j] - pos[k * n_particles + i];
 
-            double d = 0;
-            for (unsigned int k = 0; k < DIM; ++k)
-                d += di[k] * di[k];
-            d = std::sqrt(d);
+        double d = 0;
+        for (unsigned int k = 0; k < DIM; ++k)
+            d += di[k] * di[k];
+        d = std::sqrt(d);
 
-            d = d * d * d;
-            if (d > 0) {
-                matrix[i * n_particles + j] = G * di[component] / (d > D_MIN ? d : D_MIN) * mass[j];
-                matrix[j * n_particles + i] = -matrix[i * n_particles + j];
-            }
-            free(di);
-        }
+        d = d * d * d;
+        matrix[i * n_particles + j] = G * di[component] / (d > D_MIN ? d : D_MIN) * mass[j];
+        matrix[j * n_particles + i] = -matrix[i * n_particles + j];
+    }
 }
 
 __global__ void calculate_pairwise_acceleration_component_opt(const double* pos, const double* mass, const unsigned int component, double* matrix, const unsigned int n_particles, const unsigned int blocks_per_row) {
