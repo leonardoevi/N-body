@@ -89,6 +89,7 @@ public:
 
     /**
      * Simulates the system of particles, write the output file with the specified name.
+     * To be overridden depending on the type of integration to be used when advancing in time.
      */
     virtual void simulate(const std::string &out_file_name) = 0;
 
