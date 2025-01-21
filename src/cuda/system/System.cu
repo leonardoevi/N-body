@@ -38,8 +38,11 @@ void System::device_compute_acceleration(const dim3 grid_dim_2D,const dim3 block
         if constexpr (BETTER_REDUCTION)
             setZeroDiag<<<grid_dim_1D, block_dim_1D, 0 ,streams[i]>>>(d_acc_matrix[i], n_particles);
 
-        calculate_pairwise_acceleration_component<<<grid_dim_2D, block_dim_2D, 0, streams[i]>>>
-            (d_pos, d_mass, i, d_acc_matrix[i], n_particles, blocks_per_row);
+        if constexpr (BETTER_MATRIX_CALC) {
+            calculate_pairwise_acceleration_component_opt<<<grid_dim_2D, block_dim_2D, DIM * block_dim_2D.x * sizeof(double), streams[i]>>>(d_pos, d_mass, i, d_acc_matrix[i], n_particles, blocks_per_row);
+        } else
+            calculate_pairwise_acceleration_component<<<grid_dim_2D, block_dim_2D, 0, streams[i]>>>
+                (d_pos, d_mass, i, d_acc_matrix[i], n_particles, blocks_per_row);
 
         if constexpr (!BETTER_REDUCTION) {
             sum_over_rows<<<grid_dim_1D, block_dim_1D, 0 ,streams[i]>>>

@@ -9,6 +9,8 @@
 
 int main() {
     std::cout << N_PARTICLES << " particles." << std::endl;
+    std::cout << "BETTER MATRIX CALC: " << BETTER_MATRIX_CALC << std::endl;
+    std::cout << "BETTER REDUCTION: " << BETTER_REDUCTION << std::endl;
 
     auto start = std::chrono::high_resolution_clock::now();
 
