@@ -1,6 +1,5 @@
-// Vector.hpp
-#ifndef VECTOR_HPP
-#define VECTOR_HPP
+#ifndef VECTOR_H
+#define VECTOR_H
 
 #include <array>
 
@@ -9,6 +8,10 @@
 
 using namespace std;
 
+/**
+ * Template class vector needed to improve performances over simple vector calculations
+ * @tparam dimension dimension of the vector(2 or 3)
+ */
 template <unsigned int dimension> class Vector {
 
     array<double, dimension> components;
@@ -144,4 +147,4 @@ public:
     }
 
 };
-#endif // VECTOR_HPP
+#endif // VECTOR_H

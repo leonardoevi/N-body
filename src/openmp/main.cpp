@@ -2,9 +2,15 @@
 #include <chrono>
 #include <random>
 
-#include "Solver.cpp"
+#include "Solver/Solver.h"
+#include "Solver/ForwardEulerSolver.h"
+#include "Solver/LeapFrogSolver.h"
 #include "../../include/define.h"
 
+/**
+ * Generates a random vector
+ * @return a Vector of dimension DIM
+ */
 Vector<DIM> generateRandomVector() {
     random_device rd;
     mt19937 gen(rd());
@@ -18,6 +24,11 @@ Vector<DIM> generateRandomVector() {
     return randomVector;
 }
 
+/**
+ * Generates a random vector in the sphere of radius rho
+ * @param rho radius of the sphere
+ * @return a Vector of dimension DIM
+ */
 Vector<DIM> generateRandomPointOnUnitSphere(const double rho) {
     random_device rd;
     mt19937 gen(rd());
@@ -38,6 +49,14 @@ Vector<DIM> generateRandomPointOnUnitSphere(const double rho) {
     return randomPoint;
 }
 
+/**
+ * Initializes the positions and velocities of the system in a vortex effect with a number of layers
+ * @param positions array of positions to initialize
+ * @param velocities array of velocities to initialize
+ * @param numParticles number of particles
+ * @param radius radius of the bigger circle
+ * @param layers number of layers wanted
+ */
 void initializeParticles(vector<Vector<DIM>>& positions, vector<Vector<DIM>>& velocities, int numParticles, double radius, int layers) {
     const double gravitationalConstant = 9.81;
 
@@ -105,23 +124,19 @@ int main() {
     initializeParticles(positions, velocities, NUM_PARTICLES, radius, layers);
 
     //Initializing masses
-
     for (int i = 0; i < NUM_PARTICLES; i++) {
         masses[i] = 1.0;
     }
 
-    Solver<NUM_PARTICLES, DIM> solverForwardEuler(total_time, delta, masses, positions, velocities);
-    Solver<NUM_PARTICLES, DIM> solverLeapFrog(total_time, delta, masses, positions, velocities);
+    std::unique_ptr<Solver<NUM_PARTICLES, DIM>> forwardEulerSolver = std::make_unique<ForwardEulerSolver<NUM_PARTICLES, DIM>>(total_time, delta, masses, positions, velocities);
+    std::unique_ptr<Solver<NUM_PARTICLES, DIM>> leapFrogSolver = std::make_unique<LeapFrogSolver<NUM_PARTICLES, DIM>>(total_time, delta, masses, positions, velocities);
+    std::cout << "Initial Energy "<< forwardEulerSolver->compute_energy() << endl;
 
-    cout << "Initial Forward Euler Energy: " << solverForwardEuler.compute_energy() << endl;
-    cout << "Initial Leapfrog Energy: " << solverLeapFrog.compute_energy() << endl;
+    forwardEulerSolver->simulate("output_forward_euler.txt");
+    leapFrogSolver->simulate("output_leapfrog.txt");
 
-
-    solverForwardEuler.simulateForwardEuler("output_forward_euler.txt");
-    solverLeapFrog.simulateLeapFrog("output_leapfrog.txt");
-
-    cout << "Final Forward Euler Energy: " << solverForwardEuler.compute_energy() << endl;
-    cout << "Final Leapfrog Energy: " << solverLeapFrog.compute_energy() << endl;
+    std::cout << "Final Forward Euler Solver Energy " << forwardEulerSolver->compute_energy() << endl;
+    std::cout << "Final LeapFrog Solver Energy " << leapFrogSolver->compute_energy() << endl;
 
     return 0;
 }

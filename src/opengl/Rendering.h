@@ -6,18 +6,26 @@
 #include <cmath>
 
 #include "../../include/define.h"
-#include "../openmp/Vector.hpp"
+#include "../openmp/Vector.h"
 
+/**
+ * Converts degrees into radians
+ * @param degrees input degree
+ * @return the input expressed in radians
+ */
 constexpr float radians(float degrees) {
   constexpr float pi = 3.14159265358979323846f;
   return degrees * (pi / 180.0f);
 }
 
+/**
+ * Rendering renders the particles positions in a window by using OpenGL
+ */
 class Rendering {
       GLFWwindow* window;
       int width, height;
 
-      static float cameraPosX, cameraPosY, cameraPosZ;
+      static float cameraPosX, cameraPosY, cameraPosZ; // Camera position values
       static float yaw, pitch;
       static float radius; // Fixed distance from the center
       static float lastX, lastY; // Mouse tracking
@@ -28,7 +36,12 @@ class Rendering {
   public:
       static bool isPaused;
 
-  Rendering(const int width, const int height): width(width), height(height) {
+      /**
+       * Constructor of Rendering class
+       * @param width width of the window
+       * @param height height of the window
+       */
+      Rendering(const int width, const int height): width(width), height(height) {
           //Sanity check
           if (!glfwInit()) {
             cerr << "Failed to initialize GLFW" << endl;
@@ -42,7 +55,10 @@ class Rendering {
           }
         }
 
-  void initialize_rendering() {
+      /**
+       * Initializes the window before rendering
+       */
+      void initialize_rendering() {
           //Makes the context of the window the main context of the current thread
           glfwMakeContextCurrent(window);
           glewInit();
@@ -50,7 +66,10 @@ class Rendering {
           setup3DView();
         }
 
-  void setup3DView() const {
+      /**
+       * Sets up the 3D view and the input functions callbacks
+       */
+      void setup3DView() const {
           glMatrixMode(GL_PROJECTION);
           glLoadIdentity();
           gluPerspective(45.0, (double)width / height, 0.1, 100.0);
@@ -68,13 +87,27 @@ class Rendering {
 
         }
 
-  static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-      isPaused = !isPaused; // Toggle pause
-    }
-  }
+      /**
+       * Callback function used for pausing the simulation
+       * @param window current window displaying the particles
+       * @param key key used
+       * @param scancode
+       * @param action  what action is performed on the key
+       * @param mods
+       */
+      static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+          if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+            isPaused = !isPaused; // Toggle pause
+          }
+        }
 
-  static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+      /**
+       * Callback function used for zooming in and out
+       * @param window current window displaying the particles
+       * @param xoffset x component of scroll input
+       * @param yoffset y component of scroll input
+       */
+      static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
           // Adjust the radius based on scroll input
           radius -= static_cast<float>(yoffset);
           // Clamp the radius to prevent zooming too far or too close
@@ -84,7 +117,10 @@ class Rendering {
           updateCameraDirection(); // Update the camera position based on the new radius
         }
 
-  static void updateCameraDirection() {
+      /**
+       * With the new values of radius and cameraPosx, cameraPosy and cameraPosz updates the camera direction
+       */
+      static void updateCameraDirection() {
           // Convert yaw and pitch to radians
           float yawRad = radians(yaw);
           float pitchRad = radians(pitch);
@@ -96,7 +132,13 @@ class Rendering {
 
         }
 
-  static void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+      /**
+       * Callback function used for moving around the particles while dragging the mouse
+       * @param window current window displaying the particles
+       * @param xpos x component of mouse input
+       * @param ypos y component of mouse input
+       */
+      static void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
           if (!isDragging) return; // Only update if dragging
 
           if (firstMouse) {
@@ -125,7 +167,13 @@ class Rendering {
           updateCameraDirection(); // Recalculate camera position
         }
 
-  static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+      /**
+       * Callback function used for moving around the particles when clicking the mouse buttons
+       * @param window current window displaying the particles
+       * @param button button of the mouse used
+       * @param action action performed on the button
+       */
+      static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
           if (button == GLFW_MOUSE_BUTTON_LEFT) {
             if (action == GLFW_PRESS) {
               isDragging = true;
@@ -136,8 +184,13 @@ class Rendering {
           }
         }
 
-
-  void show (const vector<Vector<DIM>>& positions, const vector<Vector<DIM>>& velocities, vector<double>& masses) {
+      /**
+       * Sets the camera point of view and renders the particles
+       * @param positions array of particles' positions
+       * @param velocities array of particles' velocities
+       * @param masses array of particles' masses
+       */
+      void show (const vector<Vector<DIM>>& positions, const vector<Vector<DIM>>& velocities, vector<double>& masses) {
           if (!glfwWindowShouldClose(window)) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glMatrixMode(GL_MODELVIEW);
@@ -164,7 +217,13 @@ class Rendering {
           }
         }
 
-  void renderParticles(const vector<Vector<DIM>>& positions, const vector<Vector<DIM>>& velocities, vector<double>& masses) {
+      /**
+       * Renders the particles as spheres and the color depends on the particle's velocity normalized to the maximum velocity
+       * @param positions array of particles' positions
+       * @param velocities aray of particles' velocities
+       * @param masses array of particles' masses
+       */
+      void renderParticles(const vector<Vector<DIM>>& positions, const vector<Vector<DIM>>& velocities, vector<double>& masses) {
           double m_max = 0.0f;
           double v_max = 0.1f;
           int i = 0;
@@ -199,7 +258,11 @@ class Rendering {
           }
         }
 
-  void renderSphere(float sphereRadius) const {
+      /**
+       * Renders each particle as a sphere
+       * @param sphereRadius radius of the sphere
+       */
+      void renderSphere(float sphereRadius) const {
           const int stacks = 10;
           const int slices = 10;
           for (int i = 0; i < stacks; ++i) {
@@ -225,7 +288,11 @@ class Rendering {
           }
         }
 
-  static void window_close_callback(GLFWwindow* window) {
+      /**
+       * Calbback function used for exiting the window
+       * @param window current window displaying the particles
+       */
+      static void window_close_callback(GLFWwindow* window) {
     // terminate the program
     std::exit(0);
   }

@@ -5,11 +5,11 @@
 #include <iomanip>
 
 #include "Rendering.h"
-#include "../openmp/Vector.hpp"
+#include "../openmp/Vector.h"
 #include "../../include/define.h"
 
 int main() {
-    ifstream file("../out/out.txt");
+    ifstream file("output_interface_leapfrog.txt");
 
     if (!file.is_open()) {
       cout << "Error opening file" << endl;
@@ -49,6 +49,8 @@ int main() {
     }
 
     long double current_time;
+    // For each time step present in the file reads particles' positions and velocities and displays them. If pausing option is active renders them
+    // so that the user can still zoom in and scroll around the screen
     while (file >> current_time ) {
 
         for (int i = 0; i < num_particles; i++) {
