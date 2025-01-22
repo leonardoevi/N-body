@@ -27,7 +27,7 @@ int System::initialize_device() {
     for (auto & stream : streams)
         cudaStreamCreate(& stream);
 
-    std::cout << "Done initializing, total errors: " << errors << std::endl;
+    std::cout << "Errors in initialization: \t" << errors << std::endl;
 
     return errors;
 }

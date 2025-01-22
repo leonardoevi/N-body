@@ -54,6 +54,8 @@ int main(const int argc, char* argv[]) {
             return EXIT_FAILURE;
         }
 
+        std::cout << "Reading from file:\t\t\t" << input_file_name.value() << std::endl;
+
         in >> n_particles;
 
         // check compatibility with DIM parameter
@@ -112,8 +114,10 @@ int main(const int argc, char* argv[]) {
 
         system->simulate(out_file_name);
 
+        std::cout << "Output written in file:\t\t" << out_file_name << std::endl;
+
         auto end = std::chrono::high_resolution_clock::now();
-        std::cout << "\nElapsed time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.0l << " seconds" << std::endl << std::endl;
+        std::cout << "\nElapsed time:\t\t\t\t" << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.0l << " seconds" << std::endl << std::endl;
     }
     delete system;
 
