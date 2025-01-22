@@ -4,6 +4,8 @@
 #include <array>
 #include <iostream>
 #include <initializer_list>
+#include <memory>
+#include <math.h>
 
 class Vector {
     int dim;
