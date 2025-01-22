@@ -8,7 +8,8 @@
 #include <chrono>
 
 int main() {
-    std::cout << N_PARTICLES << " particles." << std::endl;
+    std::cout << N_PARTICLES << " particles" << std::endl << std::endl;
+    std::cout << "BETTER REDUCTION  : " << BETTER_REDUCTION << std::endl << std::endl;
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -16,27 +17,27 @@ int main() {
 
     auto vel = std::make_unique<double[]>(DIM * N_PARTICLES);
 
-    fill_spiral_3D(pos.get(), vel.get(), 0, N_PARTICLES, 0, 3, 0.75, 4, 0.15, -4, N_PARTICLES);
+    fill_spiral_3D(pos.get(), vel.get(), 0, N_PARTICLES, 0, 4, 1, 6, 0.15, -20, N_PARTICLES);
 
     auto mass = std::make_unique<double[]>(N_PARTICLES);
     for (int i = 0; i < N_PARTICLES; i++)
-        mass[i] = 1.0;
+        mass[i] = random_r();
 
     System* system;
 
     {
-        integration_type int_t = forwardEuler;
+        integration_type int_t = leapFrog;
         if (int_t == forwardEuler)
-            system = new SystemFE(N_PARTICLES, 1, 0.001, (std::move(pos)), (std::move(vel)), (std::move(mass)));
+            system = new SystemFE(N_PARTICLES, 0.3, 0.001, (std::move(pos)), (std::move(vel)), (std::move(mass)));
         else
-            system = new SystemLF(N_PARTICLES, 1, 0.001, (std::move(pos)), (std::move(vel)), (std::move(mass)));
+            system = new SystemLF(N_PARTICLES, 0.3, 0.001, (std::move(pos)), (std::move(vel)), (std::move(mass)));
 
         if (system->initialize_device() != 0)
             return EXIT_FAILURE;
         system->simulate("../out/out.txt");
 
         auto end = std::chrono::high_resolution_clock::now();
-        std::cout << "Elapsed time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000l << " seconds" << std::endl;
+        std::cout << "\nElapsed time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.0l << " seconds" << std::endl << std::endl;
     }
 
     delete system;

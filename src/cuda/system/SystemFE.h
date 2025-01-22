@@ -14,6 +14,10 @@ public:
                     std::unique_ptr<double[]> mass_)
         : System(n_particles_, t_max_, dt_, std::move(pos_), std::move(vel_), std::move(mass_)) {}
 
+    /**
+     * Simulates the evolution of the system using FORWARD EULER integration method.
+     * @param out_file_name name of the output file to write
+     */
     void simulate(const std::string &out_file_name) override;
 
 };

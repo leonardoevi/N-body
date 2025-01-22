@@ -1,15 +1,14 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-#include <integration_type.h>
-
 #define DIM 3
 #define G 1.0
 #define D_MIN 1.0e-4
 
 // REPLACEABLE BY VARIABLES
 
-#define N_PARTICLES 200  // current max is circa 22.000
-#define BLOCK_SIZE 32       // blocks will be 2D: BLOCK_SIZE*BLOCK_SIZE
+#define N_PARTICLES 5000        // current max is circa 22.000
+#define BLOCK_SIZE 32           // blocks will be 2D: BLOCK_SIZE*BLOCK_SIZE (max is 32 on my GPU)
+#define BETTER_REDUCTION true
 
 #endif //DEFINES_H

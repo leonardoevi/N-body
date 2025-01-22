@@ -5,24 +5,20 @@ __global__ void calculate_pairwise_acceleration_component(const double* pos, con
     i = i * blockDim.x + threadIdx.x;
     j = j * blockDim.y + threadIdx.y;
 
-    if (i < n_particles && j < n_particles && i < j)
-        if (j > i) {
-            double di[DIM];
-            for (unsigned int k = 0; k < DIM; ++k)
-                di[k] = pos[k * n_particles + j] - pos[k * n_particles + i];
+    if (i < n_particles && j < n_particles && i <= j){
+        double di[DIM];
+        for (unsigned int k = 0; k < DIM; ++k)
+            di[k] = pos[k * n_particles + j] - pos[k * n_particles + i];
 
-            double d = 0;
-            for (unsigned int k = 0; k < DIM; ++k)
-                d += di[k] * di[k];
-            d = std::sqrt(d);
+        double d = 0;
+        for (unsigned int k = 0; k < DIM; ++k)
+            d += di[k] * di[k];
+        d = std::sqrt(d);
 
-            d = d * d * d;
-            if (d > 0) {
-                matrix[i * n_particles + j] = G * di[component] / (d > D_MIN ? d : D_MIN) * mass[j];
-                matrix[j * n_particles + i] = -matrix[i * n_particles + j];
-            }
-            free(di);
-        }
+        d = d * d * d;
+        matrix[i * n_particles + j] = G * di[component] / (d > D_MIN ? d : D_MIN) * mass[j];
+        matrix[j * n_particles + i] = -matrix[i * n_particles + j];
+    }
 }
 
 __host__ __device__ void
@@ -49,16 +45,6 @@ __global__ void sum_over_rows(const double* mat, double* arr, const unsigned int
     }
 }
 
-__global__ void apply_motion(double* pos, double* vel, const double* acc, const unsigned int n_particles, const double dt) {
-    const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (i < n_particles)
-        for (int k = 0; k < DIM; k++) {
-            vel[n_particles * k + i] += acc[n_particles * k + i] * dt;
-            pos[n_particles * k + i] += vel[n_particles * k + i] * dt;
-    }
-}
-
 __global__ void x_plus_by(const double* x, double* y, double b, double* res, unsigned int size) {
     const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -66,4 +52,57 @@ __global__ void x_plus_by(const double* x, double* y, double b, double* res, uns
         for (int k = 0; k < DIM; k++) {
             res[i + size * k] = x[i + size * k] + b * y[i + size * k];
         }
+}
+
+__global__ void reduceSum_rows_parallel(double *input, int size, int A) {
+    extern __shared__ double sharedData[];
+
+    const unsigned int t_idx = threadIdx.x;
+    const unsigned int j = blockIdx.y * blockDim.x * 2 + threadIdx.x;
+
+    for (unsigned int k = 0; k < A; k++) {
+        const unsigned int i = blockIdx.x * A + k;
+
+        if (i >= size)
+            return;
+
+        sharedData[t_idx] = 0.0;
+        sharedData[t_idx + blockDim.x] = 0.0;
+        if (j < size)
+            sharedData[t_idx] = input[i * size + j];
+        if (j + blockDim.x < size)
+            sharedData[t_idx + blockDim.x] = input[i * size + j + blockDim.x];
+
+        __syncthreads();
+
+        for (unsigned int stride = blockDim.x; stride > 0; stride >>= 1) {
+            if (t_idx < stride) {
+                sharedData[t_idx] += sharedData[t_idx + stride];
+            }
+            __syncthreads();
+        }
+
+        if (threadIdx.x == 0)
+            input[i * size + j] = sharedData[0];
+
+    }
+}
+
+__global__ void sumRowsInterleaved(double *input, double *out, int size, int step) {
+    const unsigned int row = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < size) {
+        double sum = 0.0;
+        for (unsigned int j = 0; j < size; j += step)
+            sum += input[row * size + j];
+
+        out[row] = sum;
+    }
+}
+
+__global__ void setZeroDiag(double *input, const int size) {
+    const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (i < size)
+        input[i * size + i] = 0.0;
 }
