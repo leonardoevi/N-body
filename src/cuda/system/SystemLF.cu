@@ -2,7 +2,7 @@
 
 void SystemLF::simulate(const std::string &out_file_name) {
 
-    std::cout << "Running simulation:\t\t\tLEAP FROG" << std::endl;
+    std::cout << "Running simulation:\t\tLEAP FROG" << std::endl << std::endl;
 
     // open output file
     outFile.open(out_file_name);
