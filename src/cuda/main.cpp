@@ -9,47 +9,7 @@
 #include "system/SystemLF.h"
 #include "system/SystemFE.h"
 
-
-
-
 int main(const int argc, char* argv[]) {
-    /*
-    const int N_PARTICLES = 1000;
-    std::cout << N_PARTICLES << " particles" << std::endl << std::endl;
-    std::cout << "BETTER REDUCTION  : " << BETTER_REDUCTION << std::endl << std::endl;
-
-    auto start = std::chrono::high_resolution_clock::now();
-
-    auto pos = std::make_unique<double[]>(DIM * N_PARTICLES);
-
-    auto vel = std::make_unique<double[]>(DIM * N_PARTICLES);
-
-    fill_spiral_3D(pos.get(), vel.get(), 0, N_PARTICLES, 0, 4, 1, 6, 0.15, -20, N_PARTICLES);
-
-    auto mass = std::make_unique<double[]>(N_PARTICLES);
-    for (int i = 0; i < N_PARTICLES; i++)
-        mass[i] = random_r();
-
-    System* system;
-
-    {
-        integration_type int_t = leapFrog;
-        if (int_t == forwardEuler)
-            system = new SystemFE(N_PARTICLES, 0.3, 0.001, (std::move(pos)), (std::move(vel)), (std::move(mass)));
-        else
-            system = new SystemLF(N_PARTICLES, 0.3, 0.001, (std::move(pos)), (std::move(vel)), (std::move(mass)));
-
-        if (system->initialize_device() != 0)
-            return EXIT_FAILURE;
-        system->simulate("../out/out.txt");
-
-        auto end = std::chrono::high_resolution_clock::now();
-        std::cout << "\nElapsed time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.0l << " seconds" << std::endl << std::endl;
-    }
-
-    delete system;
-    */
-
     double d_time, total_time;
     std::string int_type;
     std::string out_file_name;
@@ -112,25 +72,25 @@ int main(const int argc, char* argv[]) {
     auto vel = std::make_unique<double[]>(DIM * n_particles);
     auto mass = std::make_unique<double[]>(n_particles);
 
-    for (int i = 0; i < n_particles; i++)
-        in >> mass[i];
+    if (in.is_open()) {
+        for (int i = 0; i < n_particles; i++)
+            in >> mass[i];
 
-    if (in.is_open())
         for (int i = 0; i < n_particles; i++) {
             for (int j = 0; j < DIM; j++) {
-                in >> pos[j * DIM + i];
+                in >> pos[j * n_particles + i];
             }
             for (int j = 0; j < DIM; j++) {
-                in >> vel[j * DIM + i];
+                in >> vel[j * n_particles + i];
             }
         }
-    else {
+    } else {
         // default system state
         fill_donut_3D(pos.get(), vel.get(), 0, N_PARTICLES_DEFAULT/2, 0, 4, 0.4, 25, N_PARTICLES_DEFAULT);
         fill_donut_3D(pos.get(), vel.get(), N_PARTICLES_DEFAULT/2, N_PARTICLES_DEFAULT, 0, 1, 0.2, -30, N_PARTICLES_DEFAULT);
 
         for (int i = 0; i < N_PARTICLES_DEFAULT; i++)
-            mass[i] = 10 * random_r();
+            mass[i] = random_r();
     }
 
     System* system;

@@ -3,12 +3,14 @@
 #include <fstream>
 #include <vector>
 #include <iomanip>
+#include <filesystem>
 
 #include "Render.h"
 #include "../../include/define.h"
+
 void print_usage(const char* executable_name) {
     std::cout << "Usage: " << std::endl;
-    std::cout << "\t " << std::filesystem::path(executable_name).filename().string() << "output_file_name" << std::endl;
+    std::cout << "\t " << std::filesystem::path(executable_name).filename().string() << " output_file_name" << std::endl;
 }
 
 int main(int argc, char* argv[]) {

@@ -18,7 +18,7 @@ SYSTEM = $(SYSTEM_DIR)/System.cu \
          $(SYSTEM_DIR)/SystemLF.cu
 
 # Output
-OUTPUT = n-body-cuda
+OUTPUT = ../../build/n-body-cuda
 
 # Compiler Flags
 NVCCFLAGS = -std=c++17 -I$(INCLUDE_DIR) -I$(FUTILS_DIR) -I$(KERNELS_DIR) -I$(SYSTEM_DIR)

@@ -2,7 +2,7 @@
 #define DEFINES_H
 
 #define DIM 3
-#define G 1.0
+#define G 10.0
 #define D_MIN 1.0e-4
 
 // REPLACEABLE BY VARIABLES
