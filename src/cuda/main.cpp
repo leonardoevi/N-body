@@ -34,7 +34,7 @@ int main(const int argc, char* argv[]) {
 
     } else {
         std::cerr << "Usage: ./" << std::filesystem::path(argv[0]).filename().string() << " d_time total_time {fe | lf} out_file_name [input.txt]" << std::endl;
-        std::cerr << "try  : ./" << std::filesystem::path(argv[0]).filename().string() << " 0.001 0.5 lf out_test.txt" << std::endl;
+        std::cerr << "try  : ./" << std::filesystem::path(argv[0]).filename().string() << " 0.0005 0.25 lf out_test.txt" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -86,8 +86,13 @@ int main(const int argc, char* argv[]) {
         }
     } else {
         // default system state
-        fill_donut_3D(pos.get(), vel.get(), 0, N_PARTICLES_DEFAULT/2, 0, 4, 0.4, 25, N_PARTICLES_DEFAULT);
-        fill_donut_3D(pos.get(), vel.get(), N_PARTICLES_DEFAULT/2, N_PARTICLES_DEFAULT, 0, 1, 0.2, -30, N_PARTICLES_DEFAULT);
+        std::cout << "Enter 0 for a RING, 1 for a SPIRAL: ";
+        int choice; std::cin >> choice;
+        if (choice == 0) {
+            fill_donut_3D(pos.get(), vel.get(), 0, N_PARTICLES_DEFAULT / 2, 0, 5, 0.5, -55, N_PARTICLES_DEFAULT);
+            fill_donut_3D(pos.get(), vel.get(), N_PARTICLES_DEFAULT / 2, N_PARTICLES_DEFAULT, 0, 2, 0.2, 40, N_PARTICLES_DEFAULT);
+        } else
+            fill_spiral_3D(pos.get(), vel.get(), 0, N_PARTICLES_DEFAULT, 0, 4, 0.7, 8, 0.1, -25, N_PARTICLES_DEFAULT);
 
         for (int i = 0; i < N_PARTICLES_DEFAULT; i++)
             mass[i] = random_r();
