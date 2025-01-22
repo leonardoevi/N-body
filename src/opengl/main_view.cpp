@@ -9,7 +9,7 @@
 
 
 int main() {
-    std::ifstream file("output_forward_euler.txt");
+    std::ifstream file("../out/out.txt");
 
     if (!file.is_open()) {
       std::cout << "Error opening file" << std::endl;

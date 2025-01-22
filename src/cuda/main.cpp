@@ -8,6 +8,7 @@
 #include <chrono>
 
 int main() {
+    const int N_PARTICLES = 1000;
     std::cout << N_PARTICLES << " particles" << std::endl << std::endl;
     std::cout << "BETTER REDUCTION  : " << BETTER_REDUCTION << std::endl << std::endl;
 

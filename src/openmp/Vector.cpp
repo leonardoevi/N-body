@@ -112,7 +112,7 @@ double Vector::dot(const Vector &rhs) const {
 
 //Returns the norm of the vector
 double Vector::norm() const {
-    return sqrt(dot(*this));
+    return std::sqrt(dot(*this));
 }
 
 // Returns normalized vector
