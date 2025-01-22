@@ -16,9 +16,9 @@ void SystemFE::simulate(const std::string &out_file_name) {
     // summon the slave thread
     pthread_create(&system_printer, nullptr, write_system_state, (void*)this);
 
-    // write the number of particles in the system
+    // write the number of particles in the system and the space dimensions.
     outFile << std::fixed << std::setprecision(std::numeric_limits<double>::digits10 + 1);
-    outFile << n_particles << std::endl;
+    outFile << n_particles << " " << DIM << std::endl;
 
     // write the mass array
     for (int i = 0; i < n_particles; i++)

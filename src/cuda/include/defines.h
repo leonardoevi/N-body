@@ -7,6 +7,7 @@
 
 // REPLACEABLE BY VARIABLES
 
+#define N_PARTICLES_DEFAULT 1000
 #define BLOCK_SIZE 32           // blocks will be 2D: BLOCK_SIZE*BLOCK_SIZE (max is 32 on my GPU)
 #define BETTER_REDUCTION true
 
