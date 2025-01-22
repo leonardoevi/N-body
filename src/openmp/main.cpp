@@ -7,57 +7,7 @@
 #include "Solver/LeapFrogSolver.h"
 #include "../../include/define.h"
 
-/**
- * Generates a random vector
- * @return a Vector of dimension DIM
- */
-Vector<DIM> generateRandomVector() {
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_real_distribution dis(-1.0, 1.0);
-
-    Vector<DIM> randomVector;
-    for (int i = 0; i < DIM; ++i) {
-        randomVector[i] = dis(gen);
-    }
-
-    return randomVector;
-}
-
-/**
- * Generates a random vector in the sphere of radius rho
- * @param rho radius of the sphere
- * @return a Vector of dimension DIM
- */
-Vector<DIM> generateRandomPointOnUnitSphere(const double rho) {
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_real_distribution<> dis(0.0, 1.0);
-
-    // Random azimuthal angle theta in the range [0, 2π)
-    double theta = dis(gen) * 2 * M_PI;
-
-    // Random polar angle phi in the range [0, π]
-    double phi = std::acos(2 * dis(gen) - 1);  // Uniform distribution for phi
-
-    // Convert spherical coordinates to Cartesian coordinates
-    Vector<DIM> randomPoint;
-    randomPoint[0] = rho *  std::sin(phi) * std::cos(theta);  // x
-    randomPoint[1] = rho * std::sin(phi) * std::sin(theta);  // y
-    if (DIM == 3) randomPoint[2] = rho * std::cos(phi);                    // z
-
-    return randomPoint;
-}
-
-/**
- * Initializes the positions and velocities of the system in a vortex effect with a number of layers
- * @param positions array of positions to initialize
- * @param velocities array of velocities to initialize
- * @param numParticles number of particles
- * @param radius radius of the bigger circle
- * @param layers number of layers wanted
- */
-void initializeParticles(vector<Vector<DIM>>& positions, vector<Vector<DIM>>& velocities, int numParticles, double radius, int layers) {
+void initialize_particles(std::vector<Vector>& positions, std::vector<Vector>& velocities, int numParticles, double radius, int layers) {
     const double gravitationalConstant = 9.81;
 
     // Total number of particles per layer
@@ -79,9 +29,9 @@ void initializeParticles(vector<Vector<DIM>>& positions, vector<Vector<DIM>>& ve
 
             // Position on the circle/sphere
             if (DIM == 3) {
-                random_device rd;
-                mt19937 gen(rd());
-                uniform_real_distribution<> dis(0.0, 1.0);
+                std::random_device rd;
+                std::mt19937 gen(rd());
+                std::uniform_real_distribution<> dis(0.0, 1.0);
                 double phi = std::acos(2 * dis(gen) - 1);
                 positions[index][0] = currentRadius * std::sin(phi) * std::cos(theta);
                 positions[index][1] = currentRadius * std::sin(phi) * std::sin(theta);
@@ -110,33 +60,33 @@ void initializeParticles(vector<Vector<DIM>>& positions, vector<Vector<DIM>>& ve
 
 int main() {
 
+    int dimension = DIM;
+    int num_particles = NUM_PARTICLES;
+
     constexpr double total_time = 20.0;
     constexpr double delta = 0.001;
-    cout << fixed << setprecision(numeric_limits<double>::digits10 + 1);
+    std::cout << std::fixed << std::setprecision(std::numeric_limits<double>::digits10 + 1);
 
     // Initializing positions and velocities randomly
-    vector<Vector<DIM>> positions(NUM_PARTICLES);
-    vector<Vector<DIM>> velocities(NUM_PARTICLES);
-    vector<double> masses(NUM_PARTICLES);
+    std::vector<Vector> positions(num_particles, Vector(dimension));
+    std::vector<Vector> velocities(num_particles, Vector(dimension));
+    std::vector<double> masses(num_particles, 0.1);
 
     const double radius = 10.0;
-    const int layers = 4;
-    initializeParticles(positions, velocities, NUM_PARTICLES, radius, layers);
+    const int layers = 2;
+    initialize_particles(positions, velocities, num_particles, radius, layers);
 
     //Initializing masses
-    for (int i = 0; i < NUM_PARTICLES; i++) {
+    for (int i = 0; i < num_particles; i++) {
         masses[i] = 1.0;
     }
 
-    std::unique_ptr<Solver<NUM_PARTICLES, DIM>> forwardEulerSolver = std::make_unique<ForwardEulerSolver<NUM_PARTICLES, DIM>>(total_time, delta, masses, positions, velocities);
-    std::unique_ptr<Solver<NUM_PARTICLES, DIM>> leapFrogSolver = std::make_unique<LeapFrogSolver<NUM_PARTICLES, DIM>>(total_time, delta, masses, positions, velocities);
-    std::cout << "Initial Energy "<< forwardEulerSolver->compute_energy() << endl;
+    std::unique_ptr<Solver> forwardEulerSolver = std::make_unique<ForwardEulerSolver>(dimension, num_particles, total_time, delta, masses, positions, velocities);
+    std::unique_ptr<Solver> leapFrogSolver = std::make_unique<LeapFrogSolver>(dimension, num_particles, total_time, delta, masses, positions, velocities);
 
     forwardEulerSolver->simulate("output_forward_euler.txt");
     leapFrogSolver->simulate("output_leapfrog.txt");
 
-    std::cout << "Final Forward Euler Solver Energy " << forwardEulerSolver->compute_energy() << endl;
-    std::cout << "Final LeapFrog Solver Energy " << leapFrogSolver->compute_energy() << endl;
 
     return 0;
 }

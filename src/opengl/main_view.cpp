@@ -4,24 +4,24 @@
 #include <vector>
 #include <iomanip>
 
-#include "Rendering.h"
-#include "../openmp/Vector.h"
+#include "Render.h"
 #include "../../include/define.h"
 
+
 int main() {
-    ifstream file("output_interface_leapfrog.txt");
+    std::ifstream file("output_forward_euler.txt");
 
     if (!file.is_open()) {
-      cout << "Error opening file" << endl;
+      std::cout << "Error opening file" << std::endl;
       return 1;
     }
 
-    int num_particles;
-    file >> num_particles;
-    cout << fixed << std::setprecision(numeric_limits<double>::digits10 + 1);
+    int num_particles, dimension;
+    file >> num_particles >> dimension;
+    std::cout << std::fixed << std::setprecision(std::numeric_limits<double>::digits10 + 1);
 
-    std::vector<Vector<DIM>> positions(num_particles);
-    std::vector<Vector<DIM>> velocities(num_particles);
+    std::vector<Vector> positions(num_particles, Vector(dimension));
+    std::vector<Vector> velocities(num_particles, Vector(dimension));
     std::vector<double> masses(num_particles);
 
     // Getting width height ratio of primary monitor
@@ -41,8 +41,8 @@ int main() {
     int x, y, width, height;
     glfwGetMonitorWorkarea(primaryMonitor, &x, &y, &width, &height);
 
-    Rendering rendering(width/1.5, height/1.5);
-    rendering.initialize_rendering();
+    Render render(width/1.5, height/1.5, dimension);
+    render.initialize_rendering();
 
     for (int i = 0; i < num_particles; i++) {
         file >> masses[i];
@@ -61,11 +61,14 @@ int main() {
                 file >> velocities[i][k];
             }
         }
-        rendering.show(positions, velocities, masses);
 
-        while (Rendering::isPaused) {
-            rendering.show(positions, velocities, masses);
+        render.show(positions, velocities, masses);
+
+        while (Render::isPaused) {
+            render.show(positions, velocities, masses);
         }
+
     }
+
 
 }

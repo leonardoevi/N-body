@@ -3,7 +3,6 @@
 #include "../../src/openmp/Solver/ForwardEulerSolver.h"
 #include "../../src/openmp/Solver/LeapFrogSolver.h"
 
-using namespace std;
 
 constexpr unsigned int num_particles = 2;
 constexpr unsigned int dimension = 2;
@@ -14,29 +13,29 @@ protected:
     double total_time = 0.5;
     double delta_time = 1.0; // In this case we will compute only one step of the simulate function
 
-    vector<double> mass;
-    vector<Vector<dimension>> initial_positions;
-    vector<Vector<dimension>> initial_velocities;
+    std::vector<double> mass;
+    std::vector<Vector> initial_positions;
+    std::vector<Vector> initial_velocities;
 
-    Solver<num_particles, dimension> *forwardEulerSolver = nullptr;
-    Solver<num_particles, dimension> *leapFrogSolver = nullptr;
+    Solver *forwardEulerSolver = nullptr;
+    Solver *leapFrogSolver = nullptr;
 
     void SetUp() override {
         //Initializing masses
         mass = {1.0, 1.0};
 
         //Initializing positions and velocities
-        initial_positions = vector<Vector<dimension>>(num_particles);
-        initial_positions[0] = Vector<dimension>({0.0, 0.0});
-        initial_positions[1] = Vector<dimension>({1.0, 0.0});
+        initial_positions = std::vector<Vector>(num_particles);
+        initial_positions[0] = Vector({0.0, 0.0});
+        initial_positions[1] = Vector({1.0, 0.0});
 
-        initial_velocities = vector<Vector<dimension>>(num_particles);
+        initial_velocities = std::vector<Vector>(num_particles);
 
-        initial_velocities[0] = Vector<dimension>({0.0, 0.0});
-        initial_velocities[1] = Vector<dimension>({0.0, 0.0});
+        initial_velocities[0] = Vector({0.0, 0.0});
+        initial_velocities[1] = Vector({0.0, 0.0});
 
-        forwardEulerSolver = new ForwardEulerSolver<num_particles, dimension>(total_time, delta_time, mass , initial_positions, initial_velocities);
-        leapFrogSolver = new LeapFrogSolver<num_particles, dimension>(total_time, delta_time, mass , initial_positions, initial_velocities);
+        forwardEulerSolver = new ForwardEulerSolver(dimension, num_particles, total_time, delta_time, mass , initial_positions, initial_velocities);
+        leapFrogSolver = new LeapFrogSolver(dimension, num_particles, total_time, delta_time, mass , initial_positions, initial_velocities);
     }
     void TearDown() override {
         delete forwardEulerSolver;
@@ -45,7 +44,7 @@ protected:
 };
 
 TEST_F(SolverTest, ComputeMatrixForwardEuler) {
-    forwardEulerSolver->computeMatrix();
+    forwardEulerSolver->compute_matrix();
 
     const auto &acceleration_matrix = forwardEulerSolver->get_accelerations();
     for (unsigned int i = 0; i < num_particles; i++) {
@@ -56,7 +55,7 @@ TEST_F(SolverTest, ComputeMatrixForwardEuler) {
 }
 
 TEST_F(SolverTest, ComputeMatrixLeapFrog) {
-    leapFrogSolver->computeMatrix();
+    leapFrogSolver->compute_matrix();
 
     const auto &acceleration_matrix = leapFrogSolver->get_accelerations();
     for (unsigned int i = 0; i < num_particles; i++) {
@@ -71,7 +70,7 @@ TEST_F(SolverTest, SimulateLeapFrog) {
 
     auto final_positions = leapFrogSolver->get_positions();
     // With the data given it can be easily computed that the position of particle 0 is now (5.0, 0)
-    EXPECT_EQ(final_positions[0], Vector<dimension>({5.0, 0.0}));
+    EXPECT_EQ(final_positions[0], Vector({5.0, 0.0}));
 }
 
 TEST_F(SolverTest, SimulateForwardEuler) {
@@ -79,7 +78,7 @@ TEST_F(SolverTest, SimulateForwardEuler) {
 
     auto final_positions = forwardEulerSolver->get_positions();
     // With the data given it can be easily computed that the position of particle 0 is now (10, 0)
-    EXPECT_EQ(final_positions[0], Vector<dimension>({10.0, 0.0}));
+    EXPECT_EQ(final_positions[0], Vector({10.0, 0.0}));
 }
 
 
