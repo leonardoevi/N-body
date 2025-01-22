@@ -59,15 +59,15 @@ void initialize_particles(std::vector<Vector>& positions, std::vector<Vector>& v
 
 void print_usage(const char* executable_name) {
     std::cout << "Usage with specific initial positions and velocities:" << std::endl;
-    std::cout << "\t" << std::filesystem::path(executable_name).filename().string() << " delta_time total_time {FE | LF} input.txt()" << std::endl;
+    std::cout << "\t" << std::filesystem::path(executable_name).filename().string() << " delta_time total_time {FE | LF} output_file_name input.txt()" << std::endl;
 
     std::cout << "Usage with generated initial positions and velocities:" << std::endl;
-    std::cout << "\t" << std::filesystem::path(executable_name).filename().string() << " delta_time total_time {FE | LF}" << std::endl;
+    std::cout << "\t" << std::filesystem::path(executable_name).filename().string() << " delta_time total_time {FE | LF} output_file_name" << std::endl;
 }
 
 int main(int argc, char* argv[]) {
 
-    if (argc != 4 && argc != 5) {
+    if (argc != 5 && argc != 6) {
         print_usage(argv[0]);
         return 1;
     }
@@ -83,8 +83,8 @@ int main(int argc, char* argv[]) {
             std::cout << "Integration supported: FE or BE" << std::endl;
             return 1;
         }
-
-        if (argc == 4) {
+        std::string output_file_name = argv[4];
+        if (argc == 5) {
             int dimension = DIM;
             int num_particles = NUM_PARTICLES;
 
@@ -107,19 +107,19 @@ int main(int argc, char* argv[]) {
 
                 std::unique_ptr<Solver> leapFrogSolver = std::make_unique<LeapFrogSolver>(dimension, num_particles, total_time, delta_time, masses, positions, velocities);
                 std::cout << "Leap Frog solver initial energy: " << leapFrogSolver->compute_energy()<< std::endl;
-                leapFrogSolver->simulate("output_leapfrog.txt");
+                leapFrogSolver->simulate(output_file_name);
                 std::cout << "Leap Frog solver final energy: " << leapFrogSolver->compute_energy()<< std::endl;
 
             }else if (integration_name == "FE") {
 
                 std::unique_ptr<Solver> forwardEulerSolver = std::make_unique<ForwardEulerSolver>(dimension, num_particles, total_time, delta_time, masses, positions, velocities);
                 std::cout << "Forward Euler solver initial energy: " << forwardEulerSolver->compute_energy()<< std::endl;
-                forwardEulerSolver->simulate("output_forward_euler.txt");
+                forwardEulerSolver->simulate(output_file_name);
                 std::cout << "Forward Euler solver final energy: " << forwardEulerSolver->compute_energy()<< std::endl;
 
             }
         } else {
-            std::string input_file = argv[4];
+            std::string input_file = argv[5];
             std::ifstream file(input_file);
 
             if (!file.is_open()) {
@@ -153,18 +153,17 @@ int main(int argc, char* argv[]) {
 
                 std::unique_ptr<Solver> leapFrogSolver = std::make_unique<LeapFrogSolver>(dimension, num_particles, total_time, delta_time, masses, positions, velocities);
                 std::cout << "Leap Frog solver initial energy: " << leapFrogSolver->compute_energy()<< std::endl;
-                leapFrogSolver->simulate("output_leapfrog.txt");
+                leapFrogSolver->simulate(output_file_name);
                 std::cout << "Leap Frog solver final energy: " << leapFrogSolver->compute_energy()<< std::endl;
 
             }else if (integration_name == "FE") {
 
                 std::unique_ptr<Solver> forwardEulerSolver = std::make_unique<ForwardEulerSolver>(dimension, num_particles, total_time, delta_time, masses, positions, velocities);
                 std::cout << "Forward Euler solver initial energy: " << forwardEulerSolver->compute_energy()<< std::endl;
-                forwardEulerSolver->simulate("output_forward_euler.txt");
+                forwardEulerSolver->simulate(output_file_name);
                 std::cout << "Forward Euler solver final energy: " << forwardEulerSolver->compute_energy()<< std::endl;
 
             }
-
         }
 
     }
