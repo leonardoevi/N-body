@@ -8,7 +8,7 @@ void ForwardEulerSolver::apply_motion(){
             for (int j = 0; j < num_particles; ++j) {
                 force += this->accelerations[i][j];
             }
-
+            force = force / masses[i];
             this->velocities[i] += force * this->delta_time;
             this->positions[i] += this->velocities[i] * this->delta_time;
         }
@@ -29,14 +29,16 @@ void ForwardEulerSolver::simulate(const std::string &output_file_name) {
     for (current_time = 0.0; current_time < total_time; current_time += delta_time){
         #pragma omp parallel
         {
-            compute_matrix();
-            apply_motion();
             #pragma omp single
             {
                 write_status_to_file(file);
             }
+            compute_matrix();
+            apply_motion();
+
         }
     }
+    write_status_to_file(file);
     end_timer();
     file.close();
 }
