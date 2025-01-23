@@ -6,7 +6,6 @@
 #include <filesystem>
 
 #include "Render.h"
-#include "../../include/define.h"
 
 void print_usage(const char* executable_name) {
     std::cout << "Usage: " << std::endl;
@@ -66,10 +65,10 @@ int main(int argc, char* argv[]) {
         while (file >> current_time ) {
 
             for (int i = 0; i < num_particles; i++) {
-                for (int j = 0; j < DIM; j++) {
+                for (int j = 0; j < dimension; j++) {
                     file >> positions[i][j];
                 }
-                for (int k = 0; k < DIM; k++) {
+                for (int k = 0; k < dimension; k++) {
                     file >> velocities[i][k];
                 }
             }

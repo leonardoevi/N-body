@@ -6,7 +6,9 @@
 #include "Solver/Solver.h"
 #include "Solver/ForwardEulerSolver.h"
 #include "Solver/LeapFrogSolver.h"
-#include "../../include/define.h"
+
+#define NUM_PARTICLES 100
+#define DIM 3
 
 void initialize_particles(std::vector<Vector>& positions, std::vector<Vector>& velocities, const int numParticles, const double radius, const int layers) {
     // Total number of particles per layer

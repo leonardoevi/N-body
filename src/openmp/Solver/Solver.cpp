@@ -22,7 +22,7 @@ void Solver::compute_matrix(){
       for (int j = i + 1; j < num_particles; ++j) {
         Vector distance = positions[j] - positions[i];
 
-        accelerations[i][j] = distance * G * masses[j] / max(distance.norm()*distance.norm()*distance.norm(), 1.e-3);
+        accelerations[i][j] = distance * G * masses[i] * masses[j] / max(distance.norm()*distance.norm()*distance.norm(), 1.e-5);
         accelerations[j][i] = - accelerations[i][j];
       }
     }
@@ -65,7 +65,7 @@ long double Solver::compute_energy() const{
     long double potential_energy = 0.0;
     for (int i = 0; i < num_particles; ++i) {
       for (int j = i+1; j < num_particles; ++j) {
-        potential_energy -= G * masses[i] * masses[j]/max((positions[i] - positions[j]).norm(), 1.e-3);
+        potential_energy -= G * masses[i] * masses[j]/max((positions[i] - positions[j]).norm(), 1.e-5);
       }
     }
 
