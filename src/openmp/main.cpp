@@ -106,14 +106,14 @@ int main(int argc, char* argv[]) {
             for (int i = 0; i < num_particles; i++) {
                 masses[i] = 1.0;
             }
-            if (integration_name == "LF") {
+            if (integration_name == "lf") {
 
                 std::unique_ptr<Solver> leapFrogSolver = std::make_unique<LeapFrogSolver>(dimension, num_particles, total_time, delta_time, masses, positions, velocities);
                 std::cout << "Leap Frog solver initial energy: " << leapFrogSolver->compute_energy()<< std::endl;
                 leapFrogSolver->simulate(output_file_name);
                 std::cout << "Leap Frog solver final energy: " << leapFrogSolver->compute_energy()<< std::endl;
 
-            }else if (integration_name == "FE") {
+            }else if (integration_name == "fe") {
 
                 std::unique_ptr<Solver> forwardEulerSolver = std::make_unique<ForwardEulerSolver>(dimension, num_particles, total_time, delta_time, masses, positions, velocities);
                 std::cout << "Forward Euler solver initial energy: " << forwardEulerSolver->compute_energy()<< std::endl;
