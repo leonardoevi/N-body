@@ -50,7 +50,7 @@ void System::device_compute_acceleration(const dim3 grid_dim_2D,const dim3 block
             const dim3 gridSize((n_particles + A - 1) / A, (n_particles + B*2 -1) / (B*2)); // Number of blocks
 
             reduceSum_rows_parallel<<<gridSize, B, B * 2 * sizeof(double), streams[i]>>>(d_acc_matrix[i], n_particles, A);
-            sumRowsInterleaved<<<grid_dim_1D , block_dim_1D, 0, streams[i]>>>(d_acc_matrix[i], (d_acc_tot + i * n_particles), n_particles, B * 2, d_mass);
+            sumRowsInterleaved<<<grid_dim_1D , block_dim_1D, 0, streams[i]>>>(d_acc_matrix[i], (d_acc_tot + i * n_particles), n_particles, B * 2);
         }
     }
 }

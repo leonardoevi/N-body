@@ -69,7 +69,7 @@ __global__ void reduceSum_rows_parallel(double *input, int size, int A);
  * @param size size of the array
  * @param step distance between elements left by the previous kernel
  */
-__global__ void sumRowsInterleaved(double *input, double *out, int size, int step, double* mass);
+__global__ void sumRowsInterleaved(double *input, double *out, int size, int step);
 
 __global__ void setZeroDiag(double *input, int size);
 
