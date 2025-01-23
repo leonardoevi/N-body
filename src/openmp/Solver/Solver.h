@@ -5,6 +5,8 @@
 #include <chrono>
 #include <fstream>
 #include <omp.h>
+#include <vector>
+#include <iomanip>
 #include "../Vector.h"
 
 

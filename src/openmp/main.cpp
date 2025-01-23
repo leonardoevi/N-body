@@ -1,6 +1,7 @@
 #include <iostream>
 #include <chrono>
 #include <random>
+#include <filesystem>
 
 #include "Solver/Solver.h"
 #include "Solver/ForwardEulerSolver.h"
