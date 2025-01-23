@@ -28,6 +28,10 @@ protected:
     // output file stream
     std::ofstream outFile;
 
+    #if WRITE_ENERGY
+    std::ofstream outFileEnergy;
+    #endif
+
     // =========================== POINTERS TO DATA ======================================= //
 
     // pointers to the position and velocity MATRICES : DIM x N_PARTICLES
@@ -96,6 +100,8 @@ public:
     void print_state() const;
 
     friend void* write_system_state(void* system);
+
+    long double compute_energy() const;
 
 protected:
 

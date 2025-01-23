@@ -16,8 +16,9 @@ __global__ void calculate_pairwise_acceleration_component(const double* pos, con
         d = std::sqrt(d);
 
         d = d * d * d;
-        matrix[i * n_particles + j] = G * di[component] / (d > D_MIN ? d : D_MIN) * mass[j] * mass[i];
-        matrix[j * n_particles + i] = -matrix[i * n_particles + j];
+        const double tmp = G * di[component] / (d > D_MIN ? d : D_MIN);
+        matrix[i * n_particles + j] = tmp * mass[j];
+        matrix[j * n_particles + i] = - tmp * mass[i];
     }
 }
 
@@ -88,7 +89,7 @@ __global__ void reduceSum_rows_parallel(double *input, int size, int A) {
     }
 }
 
-__global__ void sumRowsInterleaved(double *input, double *out, int size, int step, double* mass) {
+__global__ void sumRowsInterleaved(double *input, double *out, int size, int step) {
     const unsigned int row = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (row < size) {
@@ -96,7 +97,7 @@ __global__ void sumRowsInterleaved(double *input, double *out, int size, int ste
         for (unsigned int j = 0; j < size; j += step)
             sum += input[row * size + j];
 
-        out[row] = sum / mass[row];
+        out[row] = sum;
     }
 }
 

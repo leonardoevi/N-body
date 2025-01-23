@@ -29,6 +29,10 @@ int System::initialize_device() {
 
     std::cout << "Errors in initialization: \t" << errors << std::endl;
 
+    #if WRITE_ENERGY
+    outFileEnergy.open("energy.txt");
+    #endif
+
     return errors;
 }
 
@@ -46,7 +50,7 @@ void System::device_compute_acceleration(const dim3 grid_dim_2D,const dim3 block
             const dim3 gridSize((n_particles + A - 1) / A, (n_particles + B*2 -1) / (B*2)); // Number of blocks
 
             reduceSum_rows_parallel<<<gridSize, B, B * 2 * sizeof(double), streams[i]>>>(d_acc_matrix[i], n_particles, A);
-            sumRowsInterleaved<<<grid_dim_1D , block_dim_1D, 0, streams[i]>>>(d_acc_matrix[i], (d_acc_tot + i * n_particles), n_particles, B * 2, d_mass);
+            sumRowsInterleaved<<<grid_dim_1D , block_dim_1D, 0, streams[i]>>>(d_acc_matrix[i], (d_acc_tot + i * n_particles), n_particles, B * 2);
         }
     }
 }
@@ -101,5 +105,38 @@ System::~System() {
     // wait for slave thead to terminate
     pthread_join(system_printer, nullptr);
 
+    // close files
+    outFile.close();
+
+    #if WRITE_ENERGY
+    outFileEnergy.close();
+    #endif
+
     std::cout << "Successfully released System Object" << std::endl;
+}
+
+long double System::compute_energy() const {
+    long double kinetic = 0;
+
+    for (int i = 0; i < n_particles ; i++) {
+        double v_squared = 0;
+        for (int j = 0; j < DIM ; j++) {
+            v_squared += vel[j * n_particles + i] * vel[j * n_particles + i];
+        }
+        kinetic += 0.5 * mass[i] *v_squared;
+    }
+
+    long double potential = 0;
+    for (int i = 0; i < n_particles ; i++) {
+        for (int j = i + 1; j < n_particles ; j++) {
+            long double d = 0;
+            for (int k = 0; k < DIM ; k++) {
+                d += (pos[k * n_particles + j] - pos[k * n_particles + i]) * (pos[k * n_particles + j] - pos[k * n_particles + i]);
+            }
+            d = std::max(static_cast<long double>(D_MIN), std::sqrt(d));
+            potential += - G * mass[i] * mass[j] / d;
+        }
+    }
+
+    return kinetic + potential;
 }
