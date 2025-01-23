@@ -13,7 +13,34 @@ int main(const int argc, char* argv[]) {
     double d_time, total_time;
     std::string int_type;
     std::string out_file_name;
+
     std::optional<std::string> input_file_name;
+    std::ifstream in;
+
+    int n_particles;
+    std::unique_ptr<double[]> pos;
+    std::unique_ptr<double[]> vel;
+    std::unique_ptr<double[]> mass;
+
+
+    #if TIME_TESTING
+        n_particles = std::stoi(argv[1]);
+        total_time = 1.0;
+        d_time = 0.002;
+
+        pos = std::make_unique<double[]>(DIM * n_particles);
+        vel = std::make_unique<double[]>(DIM * n_particles);
+        mass = std::make_unique<double[]>(n_particles);
+
+        for (int i = 0; i < n_particles; i++)
+            mass[i] = random_r();
+
+        fill_spiral_3D(pos.get(), vel.get(), 0, n_particles, 0, 4, 0.7, 8, 0.1, -25, n_particles);
+
+        out_file_name = "to_delete.txt";
+
+        goto sim;
+    #endif
 
 
     if (argc == 6) {
@@ -44,8 +71,6 @@ int main(const int argc, char* argv[]) {
     }
 
     // if a file was given, read the number of particles in the system
-    std::ifstream in;
-    int n_particles;
     if (input_file_name.has_value()) {
         in.open(input_file_name.value());
 
@@ -70,9 +95,9 @@ int main(const int argc, char* argv[]) {
     }
 
     // allocate system state variables
-    auto pos = std::make_unique<double[]>(DIM * n_particles);
-    auto vel = std::make_unique<double[]>(DIM * n_particles);
-    auto mass = std::make_unique<double[]>(n_particles);
+    pos = std::make_unique<double[]>(DIM * n_particles);
+    vel = std::make_unique<double[]>(DIM * n_particles);
+    mass = std::make_unique<double[]>(n_particles);
 
     if (in.is_open()) {
         for (int i = 0; i < n_particles; i++)
@@ -105,7 +130,8 @@ int main(const int argc, char* argv[]) {
     long double e_in, e_fin;
     #endif
 
-    System* system;
+
+    sim: System* system;
     {
         auto start = std::chrono::high_resolution_clock::now();
 
@@ -124,7 +150,7 @@ int main(const int argc, char* argv[]) {
         system->simulate(out_file_name);
 
         #if WRITE_ENERGY
-        if constexpr(WRITE_ENERGY) e_fin = system->compute_energy();
+            e_fin = system->compute_energy();
         #endif
 
         std::cout << "\nOutput written in file:\t\t" << out_file_name << std::endl;
@@ -137,6 +163,13 @@ int main(const int argc, char* argv[]) {
 
         auto end = std::chrono::high_resolution_clock::now();
         std::cout << "\nElapsed time:\t\t\t" << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.0l << " seconds" << std::endl << std::endl;
+
+        #if TIME_TESTING
+            std::ofstream time_file("../asset/timing_CUDA", std::ios::app);
+            if (!time_file.is_open()) std::cerr << "Failed to open timing file" << std::endl;
+            time_file << n_particles << " " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.0l << std::endl;
+            time_file.close();
+        #endif
     }
     delete system;
 

@@ -14,6 +14,8 @@
 // WARNING this is not done efficiently do not use on large systems.
 #define WRITE_ENERGY false
 
+#define TIME_TESTING false
+
 // --- REPLACEABLE BY VARIABLES --- //
 
 #define N_PARTICLES_DEFAULT 3000
