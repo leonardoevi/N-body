@@ -21,6 +21,10 @@ void* write_system_state(void* system){
         // now it is time to write the system to file
         system_obj->write_state();
 
+        #if WRITE_ENERGY
+        system_obj->outFileEnergy << system_obj->compute_energy() << "\n";
+        #endif
+
         // set the flag
         system_obj->print_system = false;
 

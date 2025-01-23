@@ -86,6 +86,8 @@ int main(const int argc, char* argv[]) {
                 in >> vel[j * n_particles + i];
             }
         }
+
+        in.close();
     } else {
         // default system state
         std::cout << "Enter 0 for a RING, 1 for a SPIRAL: ";
@@ -99,6 +101,9 @@ int main(const int argc, char* argv[]) {
         for (int i = 0; i < N_PARTICLES_DEFAULT; i++)
             mass[i] = random_r();
     }
+    #if WRITE_ENERGY
+    long double e_in, e_fin;
+    #endif
 
     System* system;
     {
@@ -112,9 +117,23 @@ int main(const int argc, char* argv[]) {
         if (system->initialize_device() != 0)
             return EXIT_FAILURE;
 
+        #if WRITE_ENERGY
+        if constexpr(WRITE_ENERGY) e_in = system->compute_energy();
+        #endif
+
         system->simulate(out_file_name);
 
+        #if WRITE_ENERGY
+        if constexpr(WRITE_ENERGY) e_fin = system->compute_energy();
+        #endif
+
         std::cout << "\nOutput written in file:\t\t" << out_file_name << std::endl;
+
+        #if WRITE_ENERGY
+            std::cout << "Energy init :\t\t\t" << e_in << std::endl;
+            std::cout << "Energy final:\t\t\t" << e_fin << std::endl;
+        #endif
+
 
         auto end = std::chrono::high_resolution_clock::now();
         std::cout << "\nElapsed time:\t\t\t" << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() / 1000.0l << " seconds" << std::endl << std::endl;

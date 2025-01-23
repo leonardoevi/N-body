@@ -1,11 +1,20 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+// space dimensions (2D or 3D)
 #define DIM 3
+
+// gravitational constant
 #define G 10.0
+
+// minimum distance to be considered between particles (to avoid dividing by zero)
 #define D_MIN 1.0e-5
 
-// REPLACEABLE BY VARIABLES
+// flag that allows to write the energy of a system in an output file at each time step,
+// WARNING this is not done efficiently do not use on large systems.
+#define WRITE_ENERGY false
+
+// --- REPLACEABLE BY VARIABLES --- //
 
 #define N_PARTICLES_DEFAULT 3000
 #define BLOCK_SIZE 32           // blocks will be 2D: BLOCK_SIZE*BLOCK_SIZE (max is 32 on my GPU)

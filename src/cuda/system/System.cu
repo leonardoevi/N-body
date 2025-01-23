@@ -29,6 +29,10 @@ int System::initialize_device() {
 
     std::cout << "Errors in initialization: \t" << errors << std::endl;
 
+    #if WRITE_ENERGY
+    outFileEnergy.open("energy.txt");
+    #endif
+
     return errors;
 }
 
@@ -101,5 +105,38 @@ System::~System() {
     // wait for slave thead to terminate
     pthread_join(system_printer, nullptr);
 
+    // close files
+    outFile.close();
+
+    #if WRITE_ENERGY
+    outFileEnergy.close();
+    #endif
+
     std::cout << "Successfully released System Object" << std::endl;
+}
+
+long double System::compute_energy() const {
+    long double kinetic = 0;
+
+    for (int i = 0; i < n_particles ; i++) {
+        double v_squared = 0;
+        for (int j = 0; j < DIM ; j++) {
+            v_squared += vel[j * n_particles + i] * vel[j * n_particles + i];
+        }
+        kinetic += 0.5 * mass[i] *v_squared;
+    }
+
+    long double potential = 0;
+    for (int i = 0; i < n_particles ; i++) {
+        for (int j = i + 1; j < n_particles ; j++) {
+            long double d = 0;
+            for (int k = 0; k < DIM ; k++) {
+                d += (pos[k * n_particles + j] - pos[k * n_particles + i]) * (pos[k * n_particles + j] - pos[k * n_particles + i]);
+            }
+            d = std::max(static_cast<long double>(D_MIN), std::sqrt(d));
+            potential += - G * mass[i] * mass[j] / d;
+        }
+    }
+
+    return kinetic + potential;
 }
