@@ -10,62 +10,44 @@
 #define NUM_PARTICLES 100
 #define DIM 3
 
-void initialize_particles(std::vector<Vector>& positions, std::vector<Vector>& velocities, const int numParticles, const double radius, const int layers) {
-    // Total number of particles per layer
-    int particlesPerLayer = numParticles / layers;
+inline double random_number() {
+    return static_cast<double>(std::rand()) / RAND_MAX;
+}
 
-    // Alternating velocity direction
-    int direction = 1;
+void initialize_particles(std::vector<Vector>& positions, std::vector<Vector>& velocities,
+                          const int num_particles, const int dimension, const int start, const int end,
+                          const double radius, const double inner_radius, const double speed) {
+    for (int i = start; i < end; i++) {
+        // Random angles
+        const double theta = random_number() * 2 * M_PI; // Angle around the torus (major radius)
+        const double phi = random_number() * 2 * M_PI;   // Angle around the tube (minor radius)
 
-    for (int layer = 0; layer < layers; ++layer) {
-        // Current radius for this layer
-        double currentRadius = radius * (layer + 1) / layers;
+        // Position in torus
+        const double x = (radius + inner_radius * std::cos(phi)) * std::cos(theta);
+        const double y = (radius + inner_radius * std::cos(phi)) * std::sin(theta);
+        const double z = inner_radius * std::sin(phi);
 
-        for (int j = 0; j < particlesPerLayer; ++j) {
-            constexpr double gravitationalConstant = 9.81;
-            // Particle index in the overall array
-            int index = layer * particlesPerLayer + j;
+        // Assign position
+        positions[i][0] = x;
+        positions[i][1] = y;
+        if (dimension == 3) positions[i][2] = z;
 
-            // Random azimuthal angle theta in the range [0, 2π)
-            const double theta = (j / static_cast<double>(particlesPerLayer)) * 2 * M_PI;
+        // Set velocity tangent to the torus
+        const double velocity_x = -std::sin(theta) * speed;
+        const double velocity_y = std::cos(theta) * speed;
 
-            // Position on the circle/sphere
-            if (DIM == 3) {
-                std::random_device rd;
-                std::mt19937 gen(rd());
-                std::uniform_real_distribution<> dis(0.0, 1.0);
-                double phi = std::acos(2 * dis(gen) - 1);
-                positions[index][0] = currentRadius * std::sin(phi) * std::cos(theta);
-                positions[index][1] = currentRadius * std::sin(phi) * std::sin(theta);
-                positions[index][2] = currentRadius * std::cos(phi);
-            } else {
-                positions[index][0] = currentRadius * std::cos(theta); // x-coordinate
-                positions[index][1] = currentRadius * std::sin(theta); // y-coordinate
-            }
-
-            // Tangential velocity
-            double speed = std::sqrt(gravitationalConstant / currentRadius) * 4.0;
-            if (DIM == 3) {
-                velocities[index][0] = -direction * speed * sin(theta); // Tangential component in x
-                velocities[index][1] = direction * speed * cos(theta);  // Tangential component in y
-                velocities[index][2] = 0.0; // No z-component for tangential velocity
-            } else {
-                velocities[index][0] = -direction * speed * sin(theta); // Tangential component in x
-                velocities[index][1] = direction * speed * cos(theta);  // Tangential component in y
-            }
-        }
-
-        // Alternate direction for the next layer
-        direction = -direction;
+        velocities[i][0] = velocity_x;
+        velocities[i][1] = velocity_y;
+        if (dimension == 3) velocities[i][2] = 0.0;
     }
 }
 
 void print_usage(const char* executable_name) {
     std::cout << "Usage with specific initial positions and velocities:" << std::endl;
-    std::cout << "\t" << std::filesystem::path(executable_name).filename().string() << " delta_time total_time {FE | LF} output_file_name input.txt()" << std::endl;
+    std::cout << "\t" << std::filesystem::path(executable_name).filename().string() << " delta_time total_time {fe | lf} output_file_name input.txt()" << std::endl;
 
     std::cout << "Usage with generated initial positions and velocities:" << std::endl;
-    std::cout << "\t" << std::filesystem::path(executable_name).filename().string() << " delta_time total_time {FE | LF} output_file_name" << std::endl;
+    std::cout << "\t" << std::filesystem::path(executable_name).filename().string() << " delta_time total_time {fe | lf} output_file_name" << std::endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -95,16 +77,13 @@ int main(int argc, char* argv[]) {
             // Initializing positions and velocities randomly
             std::vector<Vector> positions(num_particles, Vector(dimension));
             std::vector<Vector> velocities(num_particles, Vector(dimension));
-            std::vector<double> masses(num_particles, 0.1);
+            std::vector<double> masses(num_particles);
 
-            //Generated initial positions and vectors
-            const double radius = 10.0;
-            const int layers = 2;
-            initialize_particles(positions, velocities, num_particles, radius, layers);
-
+            initialize_particles(positions, velocities, num_particles, dimension,0 ,num_particles/2, 5.0, 0.5, -55.0);
+            initialize_particles(positions, velocities, num_particles, dimension, num_particles/2,num_particles, 2, 0.2, 40.0);
             //Initializing masses
             for (int i = 0; i < num_particles; i++) {
-                masses[i] = 1.0;
+                masses[i] = random_number();
             }
             if (integration_name == "lf") {
 
@@ -152,14 +131,14 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-            if (integration_name == "LF") {
+            if (integration_name == "lf") {
 
                 std::unique_ptr<Solver> leapFrogSolver = std::make_unique<LeapFrogSolver>(dimension, num_particles, total_time, delta_time, masses, positions, velocities);
                 std::cout << "Leap Frog solver initial energy: " << leapFrogSolver->compute_energy()<< std::endl;
                 leapFrogSolver->simulate(output_file_name);
                 std::cout << "Leap Frog solver final energy: " << leapFrogSolver->compute_energy()<< std::endl;
 
-            }else if (integration_name == "FE") {
+            }else if (integration_name == "fe") {
 
                 std::unique_ptr<Solver> forwardEulerSolver = std::make_unique<ForwardEulerSolver>(dimension, num_particles, total_time, delta_time, masses, positions, velocities);
                 std::cout << "Forward Euler solver initial energy: " << forwardEulerSolver->compute_energy()<< std::endl;
