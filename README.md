@@ -39,6 +39,9 @@ Here is the timing plot for CUDA:
   <img src="asset/cuda_time.png" alt="CUDA Timing" style="width:500px; height:300px;">
 </div>
 
+NOTE: All timing tests were performed simulating a system for a total of 500 time steps. The CUDA code was executed on 
+a RTX 1070 Ti. The maximum number of particles that fit in memory was 18000.
+
 ### Visualization
 
 To visualize the simulation in real-time, we used **OpenGL**:
