@@ -8,7 +8,7 @@ HEADERS = Vector.h Solver/Solver.h Solver/ForwardEulerSolver.h Solver/LeapFrogSo
 OBJS = $(SRC:.cpp=.o)
 
 # Output executable
-OUTPUT = ../../build/n-body-omp
+OUTPUT = ../../build/n-body-openMP
 
 # Default rule
 all: $(OUTPUT)
