@@ -28,7 +28,7 @@ mapIndexTo2D(unsigned int index, const unsigned int n, unsigned int &i, unsigned
     int row = 0;
     while (index >= n - row) {
         index -= (n - row);
-        row++;
+        row++;//@note ++row is better here. You do no tneed th eprevious value of row
     }
     unsigned int col = row + index;
 
