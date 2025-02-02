@@ -42,7 +42,8 @@
 
 * **Linux:**
     * **Build and Run:**
-        * In each subfolder of the `src` directory (e.g., `cuda`, `openmp`, `opengl`), run:
+        * Open the project in CLion and load it from the CMakeLists.txt file. (Recommended)
+        * Alternatively you can compile the CUDA/OpenMP code by moving to each subfolder of the `src` directory (`cuda`, `openmp`), and run:
             ```bash
             make
             ```
@@ -63,7 +64,7 @@
 
 * **Visualization (OpenGL):**
     ```bash
-    ./opengl_visualization <output_filename>
+    ./n-body-openGL <output_filename>
     ```
 
 **Input File Format:**
@@ -84,4 +85,21 @@
     * `<velocity_xi>`: x-coordinate of the velocity of the i-th particle.
     * Positions and velocities are provided for each particle in each line.
 
-This file provides a comprehensive guide to installing and running the project.
+
+**A simple test case**
+
+Both the OpenMP and CUDA executables can be run without providing an input file. However,
+an example of input state can be found in the folder `asset/LeapFrog_vs_ForwardEuler/lf_vs_fe.txt`.
+You can compile the codes and run:
+```
+./n-body-cuda 0.001 0.5 lf out.txt <path-to>/lf_vs_fe.txt
+```
+or
+```
+./n-body-openMP 0.001 0.5 lf out.txt <path-to>/lf_vs_fe.txt
+```
+and
+```
+./n-body-openGL <path-to>/out.txt
+```
+to visualize the results.
