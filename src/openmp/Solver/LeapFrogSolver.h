@@ -3,10 +3,14 @@
 
 #include "Solver.h"
 #include "../Vector.h"
-
+//@note it's better to give extension .hpp to C++ header file
+//to indicate that they are not C header file
 
 class LeapFrogSolver : public Solver {
   public:
+  //@note this constructor just calls the base one. You could have saved useless typing 
+  // by delegating the constructor:
+  // using Solver::Solver
     LeapFrogSolver(int dimension, int num_particles, double total_time, double delta_time,
                    const std::vector<double>& masses,
                    const std::vector<Vector>& init_positions,
