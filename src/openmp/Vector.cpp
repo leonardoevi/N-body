@@ -4,6 +4,8 @@ int Vector::get_dim() const {
     return dim;
 }
 
+//@note you could have exploited openMP for several of these functions
+// or used an optimized  blas library 
 //Is equal operator
 bool Vector::operator==(const Vector &rhs) const {
     for (int i = 0; i < dim; i++) {
@@ -23,6 +25,8 @@ double &Vector::operator[](unsigned int index) {
 }
 
 const double &Vector::operator[](unsigned int index) const {
+    //@note dim is int, index is unsigned, better be consistent.
+    // this happens also elsewhere
     if (index >= dim) {
         throw std::out_of_range("Index out of range");
     }
@@ -121,6 +125,9 @@ Vector Vector::normalize() const {
     if (norm == 0.0) {
         throw std::out_of_range("Norm is zero");
     }
+    //@note return the value directly, no need to move it
+    //return *this / norm; 
+    // move may disrupt copy elision here, whihc is more efficient than move.
     return std::move(*this / norm);
 }
 
